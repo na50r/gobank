@@ -14,6 +14,7 @@ type Storage interface {
 	UpdateAccount(a *Account) error
 	DeleteAccount(id int) error
 	GetAccounts() ([]*Account, error)
+	GetAccountByNumber(number int) (*Account, error)
 	Init() error
 }
 
@@ -51,6 +52,7 @@ func (s *PostgresStore) createAccountTable() error {
 		first_name varchar(100),
 		last_name varchar(100),
 		number serial,
+		password varchar(100),
 		balance serial,
 		created_at timestamp
 		)`
@@ -60,14 +62,15 @@ func (s *PostgresStore) createAccountTable() error {
 
 func (s *PostgresStore) CreateAccount(acc *Account) error {
 	query := `insert into account 
-	(first_name, last_name, number, balance, created_at)
-	values ($1, $2, $3, $4, $5)`
+	(first_name, last_name, number, password, balance, created_at)
+	values ($1, $2, $3, $4, $5, $6)`
 
 	_, err := s.db.Exec(
 		query,
 		acc.FirstName,
 		acc.LastName,
 		acc.Number,
+		acc.EncryptedPassword,
 		acc.Balance,
 		acc.CreatedAt,
 	)
@@ -94,17 +97,13 @@ func (s *PostgresStore) UpdateAccount(acc *Account) error {
 	query := `UPDATE account SET
         first_name = $1,
         last_name = $2,
-        number = $3,
-        balance = $4
-        WHERE id = $5`
-
+        balance = $3
+		WHERE id = $4`
 	_, err := s.db.Exec(
 		query,
 		acc.FirstName,
 		acc.LastName,
-		acc.Number,
 		acc.Balance,
-		acc.ID,
 	)
 	return err
 }
@@ -152,6 +151,7 @@ func (s *SQLiteStore) createAccountTable() error {
 		first_name text,
 		last_name text,
 		number integer,
+		password text,
 		balance real,
 		created_at datetime
 		)`
@@ -165,14 +165,15 @@ func (s *SQLiteStore) Init() error {
 
 func (s *SQLiteStore) CreateAccount(acc *Account) error {
 	query := `insert into account 
-	(first_name, last_name, number, balance, created_at)
-	values (?, ?, ?, ?, ?)`
+	(first_name, last_name, number, password, balance, created_at)
+	values (?, ?, ?, ?, ?, ?)`
 
 	_, err := s.db.Exec(
 		query,
 		acc.FirstName,
 		acc.LastName,
 		acc.Number,
+		acc.EncryptedPassword,
 		acc.Balance,
 		acc.CreatedAt,
 	)
@@ -180,6 +181,19 @@ func (s *SQLiteStore) CreateAccount(acc *Account) error {
 		return err
 	}
 	return nil
+}
+
+func (s *SQLiteStore) GetAccountByNumber(number int) (*Account, error) {
+	rows, err := s.db.Query("select * from account where number = ?", number)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		defer rows.Close()
+		return scanIntoAccount(rows)
+	}
+	return nil, fmt.Errorf("account %d not found", number)
 }
 
 func (s *SQLiteStore) GetAccountByID(id int) (*Account, error) {
@@ -204,7 +218,6 @@ func (s *SQLiteStore) UpdateAccount(acc *Account) error {
 	query := `UPDATE account SET
         first_name = ?,
         last_name = ?,
-        number = ?,
         balance = ?
         WHERE id = ?`
 
@@ -212,7 +225,6 @@ func (s *SQLiteStore) UpdateAccount(acc *Account) error {
 		query,
 		acc.FirstName,
 		acc.LastName,
-		acc.Number,
 		acc.Balance,
 		acc.ID,
 	)
@@ -244,6 +256,7 @@ func scanIntoAccount(rows *sql.Rows) (*Account, error) {
 		&acc.FirstName,
 		&acc.LastName,
 		&acc.Number,
+		&acc.EncryptedPassword,
 		&acc.Balance,
 		&acc.CreatedAt,
 	)

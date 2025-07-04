@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"time"
 
 	jwt "github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const JWT_SECRET = "secret"
@@ -51,17 +53,34 @@ func (s *APIServer) Run() {
 	router.HandleFunc("/login", makeHTTPHandleFunc(s.handleLogin))
 	router.HandleFunc("/account", makeHTTPHandleFunc(s.handleAccount))
 	router.HandleFunc("/account/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleAccountByID), s.store))
-	router.HandleFunc("/transfer", makeHTTPHandleFunc(s.handleTransfer))
+	router.HandleFunc("/transfer/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer), s.store))
 
 	log.Println("JSON API server running on port: ", s.listenAddr)
 	http.ListenAndServe(s.listenAddr, router)
 }
 
 func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	req := new(LoginRequest)
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return err
 	}
+
+	acc, err := s.store.GetAccountByNumber(req.Number)
+	if err != nil {
+		return err
+	}
+	pw := req.Password
+	encpw := acc.EncryptedPassword
+	if err := bcrypt.CompareHashAndPassword([]byte(encpw), []byte(pw)); err != nil {
+		return err
+	}
+
+	tokenString, err := createJWT(acc)
+	if err != nil {
+		return err
+	}
+
+	w.Header().Add("x-jwt-token", tokenString)
 	return WriteJSON(w, http.StatusOK, req)
 }
 
@@ -134,14 +153,6 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	if err := s.store.CreateAccount(acc); err != nil {
 		return err
 	}
-
-	tokenString, err := createJWT(acc)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("tokenString: ", tokenString)
-
 	return WriteJSON(w, http.StatusOK, acc)
 }
 
@@ -166,8 +177,39 @@ func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
+	id, err := getID(r)
+	if err != nil {
+		return err
+	}
+
 	req := new(Transaction)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return err
+	}
+	amnt := req.Amount
+	recipientNumber := req.Recipient
+
+	sender, err := s.store.GetAccountByID(id)
+	if err != nil {
+		return err
+	}
+
+	recipient, err := s.store.GetAccountByNumber(recipientNumber)
+	if err != nil {
+		return err
+	}
+
+	if sender.Balance < amnt {
+		return fmt.Errorf("insufficient funds")
+	}
+
+	sender.Balance -= amnt
+	recipient.Balance += amnt
+
+	if err := s.store.UpdateAccount(sender); err != nil {
+		return err
+	}
+	if err := s.store.UpdateAccount(recipient); err != nil {
 		return err
 	}
 	defer r.Body.Close()
@@ -177,12 +219,8 @@ func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("x-jwt-token")
-		token, err := validateJWT(tokenString)
-		if err != nil {
-			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
-			return
-		}
-		if !token.Valid {
+		token, err := parseJWT(tokenString)
+		if err != nil && !token.Valid {
 			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
 			return
 		}
@@ -204,13 +242,14 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
 			return
 		}
+		printTimeLeft(token)
 		handlerFunc(w, r)
 	}
 }
 
 func createJWT(account *Account) (string, error) {
 	claims := &jwt.MapClaims{
-		"expired_at":     1500,
+		"exp":            time.Now().Add(time.Hour).Unix(),
 		"account_number": account.Number,
 	}
 	secret := JWT_SECRET
@@ -219,7 +258,7 @@ func createJWT(account *Account) (string, error) {
 	return token.SignedString([]byte(secret))
 }
 
-func validateJWT(tokenString string) (*jwt.Token, error) {
+func parseJWT(tokenString string) (*jwt.Token, error) {
 	secret := JWT_SECRET
 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -239,19 +278,35 @@ func getID(r *http.Request) (int, error) {
 	return id, nil
 }
 
+func getNumber(r *http.Request) (int, error) {
+	numberStr := mux.Vars(r)["number"]
+	number, err := strconv.Atoi(numberStr)
+	if err != nil {
+		return number, fmt.Errorf("invalid number given %s", numberStr)
+	}
+	return number, nil
+}
+
+func printTimeLeft(token *jwt.Token) {
+	claims := token.Claims.(jwt.MapClaims)
+	expirationTime := time.Unix(int64(claims["exp"].(float64)), 0)
+	timeLeft := expirationTime.Sub(time.Now())
+	fmt.Println("Time left: ", timeLeft)
+}
+
 func updateAccountWithReflect(acc *Account, req *UpdateAccountRequest) {
 	//ChatGPT Aided
 	//https://blog.devtrovert.com/p/reflection-in-go-everything-you-need
-	//Loop through all fields and set only if not null
-	accVal := reflect.ValueOf(acc).Elem() // Account struct (addressable)
-	reqVal := reflect.ValueOf(req).Elem() // UpdateAccountRequest struct
+	//Loop through all fields
+	//Update only if update request field is not nil
+	accVal := reflect.ValueOf(acc).Elem()
+	reqVal := reflect.ValueOf(req).Elem()
 	for i := 0; i < reqVal.NumField(); i++ {
-		reqField := reqVal.Field(i) // e.g. *string or *int
+		reqField := reqVal.Field(i)
 		if !reqField.IsNil() {
 			fieldName := reqVal.Type().Field(i).Name
 			accField := accVal.FieldByName(fieldName)
 			if accField.IsValid() && accField.CanSet() {
-				// Set accField to the dereferenced value of reqField
 				accField.Set(reqField.Elem())
 			}
 		}

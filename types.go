@@ -7,8 +7,7 @@ import (
 )
 
 type Transaction struct {
-	ID        int       `json:"id"`
-	AccountNr int       `json:"account_nr"`
+	Recipient int       `json:"recipient"`
 	Amount    int       `json:"amount"`
 }
 
