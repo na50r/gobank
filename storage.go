@@ -15,6 +15,8 @@ type Storage interface {
 	DeleteAccountByNumber(id int) error
 	GetAccounts() ([]*Account, error)
 	GetAccountByNumber(number int) (*Account, error)
+	CreateRefreshToken(rt *RefreshToken) error
+	GetRefreshToken(id int) (*RefreshToken, error)
 	Init() error
 }
 
@@ -43,7 +45,8 @@ func NewPostgresStore() (*PostgresStore, error) {
 }
 
 func (s *PostgresStore) Init() error {
-	return s.createAccountTable()
+	s.createAccountTable()
+	return nil
 }
 
 func (s *PostgresStore) createAccountTable() error {
@@ -98,12 +101,13 @@ func (s *PostgresStore) UpdateAccount(acc *Account) error {
         first_name = $1,
         last_name = $2,
         balance = $3
-		WHERE number = $4`
+		WHERE id = $4`
 	_, err := s.db.Exec(
 		query,
 		acc.FirstName,
 		acc.LastName,
 		acc.Balance,
+		acc.ID,
 	)
 	return err
 }
@@ -159,8 +163,37 @@ func (s *SQLiteStore) createAccountTable() error {
 	return err
 }
 
+func (s *SQLiteStore) createRefreshTokenTable() error {
+	query := `create table if not exists refresh_token (
+		id integer primary key autoincrement,
+		account_id integer,
+		token text
+		)`
+	_, err := s.db.Exec(query)
+	return err
+}
+
 func (s *SQLiteStore) Init() error {
-	return s.createAccountTable()
+	if err := s.createAccountTable(); err != nil {
+		return err
+	}
+	if err := s.createRefreshTokenTable(); err != nil {
+		return err
+	}
+	return nil
+	
+}
+
+func (s * SQLiteStore) GetRefreshToken(accountID int) (*RefreshToken, error) {
+	rows, err := s.db.Query("select * from refresh_token where account_id = ?", accountID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		defer rows.Close()
+		return scanIntoRefreshToken(rows)
+	}
+	return nil, fmt.Errorf("refresh token for account %d not found", accountID)
 }
 
 func (s *SQLiteStore) CreateAccount(acc *Account) error {
@@ -176,6 +209,22 @@ func (s *SQLiteStore) CreateAccount(acc *Account) error {
 		acc.EncryptedPassword,
 		acc.Balance,
 		acc.CreatedAt,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *SQLiteStore) CreateRefreshToken(rt *RefreshToken) error {
+	query := `insert into refresh_token 
+	(id, account_id, token)
+	values (?, ?, ?)`
+	_, err := s.db.Exec(
+		query,
+		rt.ID,
+		rt.AccountID,
+		rt.Token,
 	)
 	if err != nil {
 		return err
@@ -219,7 +268,7 @@ func (s *SQLiteStore) UpdateAccount(acc *Account) error {
         first_name = ?,
         last_name = ?,
         balance = ?
-        WHERE number = ?`
+        WHERE id = ?`
 
 	_, err := s.db.Exec(
 		query,
@@ -261,4 +310,14 @@ func scanIntoAccount(rows *sql.Rows) (*Account, error) {
 		&acc.CreatedAt,
 	)
 	return acc, err
+}
+
+func scanIntoRefreshToken(rows *sql.Rows) (*RefreshToken, error) {
+	rt := new(RefreshToken)
+	err := rows.Scan(
+		&rt.ID,
+		&rt.AccountID,
+		&rt.Token,
+	)
+	return rt, err
 }

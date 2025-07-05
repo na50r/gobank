@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"reflect"
 	"strconv"
 	"time"
@@ -12,15 +11,10 @@ import (
 	jwt "github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
+	"net/http"
 )
 
 const JWT_SECRET = "secret"
-
-type apiFunc func(http.ResponseWriter, *http.Request) error
-
-type ApiError struct {
-	Error string `json:"error"`
-}
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Add("Content-Type", "application/json")
@@ -79,8 +73,15 @@ func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-
 	w.Header().Add("x-jwt-token", tokenString)
+
+	rt, err := s.store.GetRefreshToken(acc.ID)
+	if err != nil {
+		return err
+	}
+	if err := setRefreshToken(w, rt.Token); err != nil {
+		return err
+	}
 	return WriteJSON(w, http.StatusOK, req)
 }
 
@@ -150,7 +151,16 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return err
 	}
+
+	rt, err := NewRefreshToken(acc)
+	if err != nil {
+		return err
+	}
+
 	if err := s.store.CreateAccount(acc); err != nil {
+		return err
+	}
+	if err := s.store.CreateRefreshToken(rt); err != nil {
 		return err
 	}
 	return WriteJSON(w, http.StatusOK, acc)
@@ -304,3 +314,18 @@ func updateAccountWithReflect(acc *Account, req *UpdateAccountRequest) {
 		}
 	}
 }
+
+func setRefreshToken(w http.ResponseWriter, tokenString string) error {
+	cookie := http.Cookie{
+		Name:  "refresh_token",
+		Value: tokenString,
+		HttpOnly: true,
+		Secure: false, // Should be changed
+		SameSite: http.SameSiteLaxMode,
+		Path: "/", // Should be changed
+		Expires: time.Now().Add(time.Hour * 24),
+	}
+	http.SetCookie(w, &cookie)
+	return nil
+}
+

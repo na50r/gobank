@@ -17,6 +17,18 @@ func seedAccount(store Storage, fname, lname, pw string) *Account {
 		log.Fatal(err)
 	}
 
+	acc, err = store.GetAccountByNumber(acc.Number)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rt, err := NewRefreshToken(acc)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := store.CreateRefreshToken(rt); err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Println("Created account:", acc.Number)
 	return acc
 }

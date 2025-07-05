@@ -4,7 +4,16 @@ import (
 	"math/rand"
 	"time"
 	"golang.org/x/crypto/bcrypt"
+	jwt "github.com/golang-jwt/jwt"
+	"net/http"
 )
+
+
+type apiFunc func(http.ResponseWriter, *http.Request) error
+
+type ApiError struct {
+	Error string `json:"error"`
+}
 
 type Transaction struct {
 	Recipient int       `json:"recipient"`
@@ -19,6 +28,12 @@ type Account struct {
 	EncryptedPassword string `json:"-"`
 	Balance   float64       `json:"balance"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type RefreshToken struct {
+	ID int `json:"id"`
+	AccountID int `json:"account_id"`
+	Token string `json:"token"`
 }
 
 type CreateAccountRequest struct {
@@ -54,4 +69,21 @@ func NewAccount(firstName, lastName, password string) (*Account, error) {
 		CreatedAt: time.Now().UTC(),
 	}, nil
 }
+
+func NewRefreshToken(account *Account) (*RefreshToken, error) {
+	refreshToken := jwt.New(jwt.SigningMethodHS256)
+	claims := refreshToken.Claims.(jwt.MapClaims)
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	rt, err := refreshToken.SignedString([]byte(JWT_SECRET))
+	if err != nil {
+		return nil, err
+	}
+
+	return &RefreshToken{
+		ID: rand.Intn(10000),
+		AccountID: account.ID,
+		Token: rt,
+	}, nil
+}
+
 
