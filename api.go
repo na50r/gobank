@@ -51,9 +51,9 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/login", makeHTTPHandleFunc(s.handleLogin))
-	router.HandleFunc("/account", makeHTTPHandleFunc(s.handleAccount))
-	router.HandleFunc("/account/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleAccountByID), s.store))
-	router.HandleFunc("/transfer/{id}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer), s.store))
+	router.HandleFunc("/accounts", makeHTTPHandleFunc(s.handleAccounts))
+	router.HandleFunc("/account/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleAccount), s.store))
+	router.HandleFunc("/transfer/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer), s.store))
 
 	log.Println("JSON API server running on port: ", s.listenAddr)
 	http.ListenAndServe(s.listenAddr, router)
@@ -84,7 +84,7 @@ func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
 	return WriteJSON(w, http.StatusOK, req)
 }
 
-func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
+func (s *APIServer) handleAccounts(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
 		return s.handleGetAccounts(w)
 	}
@@ -102,7 +102,7 @@ func (s *APIServer) handleGetAccounts(w http.ResponseWriter) error {
 	return WriteJSON(w, http.StatusOK, accs)
 }
 
-func (s *APIServer) handleAccountByID(w http.ResponseWriter, r *http.Request) error {
+func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == "GET" {
 		return s.handleGetAccount(w, r)
 	}
@@ -116,11 +116,11 @@ func (s *APIServer) handleAccountByID(w http.ResponseWriter, r *http.Request) er
 }
 
 func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
-	id, err := getID(r)
+	num, err := getNumber(r)
 	if err != nil {
 		return err
 	}
-	acc, err := s.store.GetAccountByID(id)
+	acc, err := s.store.GetAccountByNumber(num)
 	if err != nil {
 		return err
 	}
@@ -128,11 +128,11 @@ func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) err
 }
 
 func (s *APIServer) handleDeleteAccount(w http.ResponseWriter, r *http.Request) error {
-	id, err := getID(r)
+	num, err := getNumber(r)
 	if err != nil {
 		return err
 	}
-	err = s.store.DeleteAccount(id)
+	err = s.store.DeleteAccountByNumber(num)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) error {
-	id, err := getID(r)
+	num, err := getNumber(r)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) 
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return err
 	}
-	acc, err := s.store.GetAccountByID(id)
+	acc, err := s.store.GetAccountByNumber(num)
 	if err != nil {
 		return err
 	}
@@ -177,7 +177,7 @@ func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error {
-	id, err := getID(r)
+	num, err := getNumber(r)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 	amnt := req.Amount
 	recipientNumber := req.Recipient
 
-	sender, err := s.store.GetAccountByID(id)
+	sender, err := s.store.GetAccountByNumber(num)
 	if err != nil {
 		return err
 	}
@@ -224,21 +224,13 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
 			return
 		}
-
-		userID, err := getID(r)
+		accountNumber, err := getNumber(r)
 		if err != nil {
 			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
 			return
 		}
-
-		account, err := s.GetAccountByID(userID)
-		if err != nil {
-			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
-			return
-		}
-
 		claims := token.Claims.(jwt.MapClaims)
-		if account.Number != int(claims["account_number"].(float64)) {
+		if accountNumber != int(claims["account_number"].(float64)) {
 			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
 			return
 		}

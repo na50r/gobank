@@ -12,7 +12,7 @@ type Storage interface {
 	GetAccountByID(id int) (*Account, error)
 	CreateAccount(a *Account) error
 	UpdateAccount(a *Account) error
-	DeleteAccount(id int) error
+	DeleteAccountByNumber(id int) error
 	GetAccounts() ([]*Account, error)
 	GetAccountByNumber(number int) (*Account, error)
 	Init() error
@@ -98,7 +98,7 @@ func (s *PostgresStore) UpdateAccount(acc *Account) error {
         first_name = $1,
         last_name = $2,
         balance = $3
-		WHERE id = $4`
+		WHERE number = $4`
 	_, err := s.db.Exec(
 		query,
 		acc.FirstName,
@@ -108,8 +108,8 @@ func (s *PostgresStore) UpdateAccount(acc *Account) error {
 	return err
 }
 
-func (s *PostgresStore) DeleteAccount(id int) error {
-	_, err := s.db.Query("delete from account where id = $1", id)
+func (s *PostgresStore) DeleteAccountByNumber(id int) error {
+	_, err := s.db.Query("delete from account where number = $1", id)
 	return err
 }
 
@@ -209,8 +209,8 @@ func (s *SQLiteStore) GetAccountByID(id int) (*Account, error) {
 	return nil, fmt.Errorf("account %d not found", id)
 }
 
-func (s *SQLiteStore) DeleteAccount(id int) error {
-	_, err := s.db.Query("delete from account where id = ?", id)
+func (s *SQLiteStore) DeleteAccountByNumber(id int) error {
+	_, err := s.db.Query("delete from account where number = ?", id)
 	return err
 }
 
@@ -219,7 +219,7 @@ func (s *SQLiteStore) UpdateAccount(acc *Account) error {
         first_name = ?,
         last_name = ?,
         balance = ?
-        WHERE id = ?`
+        WHERE number = ?`
 
 	_, err := s.db.Exec(
 		query,
