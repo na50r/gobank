@@ -1,14 +1,16 @@
-# Compilers
-## Windows 
-* Issues can occur when working with the sqlite3 package
-* What worked was using the TDM-GCC Compiler: https://jmeubank.github.io/tdm-gcc/
-* GCC: gcc.exe (MinGW-W64 x86_64-ucrt-posix-seh, built by Brecht Sanders, r8) 13.2.0
-* GO: go1.22.5 windows/amd64
+# Simple Bank API
+A simple bank API built with Go. Based on Anthony GG's [Building A JSON API In Golang](https://www.youtube.com/watch?v=pwZuNmAzaH8&list=PL0xRBLFXXsP6nudFDqMXzrvQCZrxSOm-2) series.
+Uses:
+* Gorilla Mux for routing
+* JWT for authentication
+    * Currently NOT secure, uses access token and refresh tokens
+    * At the moment, access token only, plan to use rotating refresh tokens
+    * But better: Use a third-party authentication service instead
+* SQLite for storage
+* SSE for real-time updates
+* Simple vanilla JS for the frontend
 
-## Linux (Ubuntu WSL)
-* GCC: gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
-* GO: go1.22.5 linux/amd64
-
-## SQLite
-* Some operations differ from Postgres, such as how values are injected into the SQL string
-* Or how to handle rows operations: https://stackoverflow.com/questions/32479071/sqlite3-error-database-is-locked-in-golang
+## Requirements
+* Go 1.22.5 (windows/amd64)
+* [TDM-GCC](https://jmeubank.github.io/tdm-gcc/) (for sqlite3 package)
+* Optional: Docker for Postgres (if you want to use Postgres instead of SQLite)

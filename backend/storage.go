@@ -151,7 +151,7 @@ func NewSQLiteStore() (*SQLiteStore, error) {
 
 func (s *SQLiteStore) createAccountTable() error {
 	query := `create table if not exists account (
-		id integer primary key autoincrement,
+		id integer primary key,
 		first_name text,
 		last_name text,
 		number integer,
@@ -198,11 +198,12 @@ func (s * SQLiteStore) GetRefreshToken(accountID int) (*RefreshToken, error) {
 
 func (s *SQLiteStore) CreateAccount(acc *Account) error {
 	query := `insert into account 
-	(first_name, last_name, number, password, balance, created_at)
-	values (?, ?, ?, ?, ?, ?)`
+	(id, first_name, last_name, number, password, balance, created_at)
+	values (?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := s.db.Exec(
 		query,
+		acc.ID,
 		acc.FirstName,
 		acc.LastName,
 		acc.Number,

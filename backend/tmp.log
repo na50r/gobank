@@ -1,0 +1,44 @@
+2025/07/05 14:38:00 http: panic serving [::1]:49358: runtime error: invalid memory address or nil pointer dereference
+goroutine 8 [running]:
+net/http.(*conn).serve.func1()
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:1947 +0xbe
+panic({0x7ff6013abfa0?, 0x7ff60135a990?})
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/runtime/panic.go:791 +0x132
+main.(*APIServer).Run.withJWTAuth.func4({0x7ff60149ee20, 0xc00012c2a0}, 0xc000114f00)
+        C:/Files/Personal Use/Personal Projects/goproj/gobank/api.go:249 +0x5a
+net/http.HandlerFunc.ServeHTTP(0x7ff6013d95c0?, {0x7ff60149ee20?, 0xc00012c2a0?}, 0x1c?)
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:2220 +0x29
+main.corsMiddleware.func1({0x7ff60149ee20, 0xc00012c2a0}, 0xc000114f00)
+        C:/Files/Personal Use/Personal Projects/goproj/gobank/api.go:68 +0x282
+net/http.HandlerFunc.ServeHTTP(0xc000114dc0?, {0x7ff60149ee20?, 0xc00012c2a0?}, 0x7ff6010094ef?)
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:2220 +0x29
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc0000000c0, {0x7ff60149ee20, 0xc00012c2a0}, 0xc000114c80)
+        C:/Users/Kokiri/go/pkg/mod/github.com/gorilla/mux@v1.8.1/mux.go:212 +0x1e2
+net/http.serverHandler.ServeHTTP({0xc000106030?}, {0x7ff60149ee20?, 0xc00012c2a0?}, 0x6?)
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:3210 +0x8e
+net/http.(*conn).serve(0xc0000d41b0, {0x7ff60149f5a0, 0xc00002b740})
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:2092 +0x5d0
+created by net/http.(*Server).Serve in goroutine 1
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:3360 +0x485
+2025/07/05 14:38:00 http: panic serving [::1]:49365: runtime error: invalid memory address or nil pointer dereference
+goroutine 9 [running]:
+net/http.(*conn).serve.func1()
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:1947 +0xbe
+panic({0x7ff6013abfa0?, 0x7ff60135a990?})
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/runtime/panic.go:791 +0x132
+main.(*APIServer).Run.withJWTAuth.func4({0x7ff60149ee20, 0xc0001a8000}, 0xc000190280)
+        C:/Files/Personal Use/Personal Projects/goproj/gobank/api.go:249 +0x5a
+net/http.HandlerFunc.ServeHTTP(0x7ff6013d95c0?, {0x7ff60149ee20?, 0xc0001a8000?}, 0x1c?)
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:2220 +0x29
+main.corsMiddleware.func1({0x7ff60149ee20, 0xc0001a8000}, 0xc000190280)
+        C:/Files/Personal Use/Personal Projects/goproj/gobank/api.go:68 +0x282
+net/http.HandlerFunc.ServeHTTP(0xc000190140?, {0x7ff60149ee20?, 0xc0001a8000?}, 0x7ff6010094ef?)
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:2220 +0x29
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc0000000c0, {0x7ff60149ee20, 0xc0001a8000}, 0xc000190000)
+        C:/Users/Kokiri/go/pkg/mod/github.com/gorilla/mux@v1.8.1/mux.go:212 +0x1e2
+net/http.serverHandler.ServeHTTP({0xc00018c030?}, {0x7ff60149ee20?, 0xc0001a8000?}, 0x6?)
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:3210 +0x8e
+net/http.(*conn).serve(0xc0000d4240, {0x7ff60149f5a0, 0xc00002b740})
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:2092 +0x5d0
+created by net/http.(*Server).Serve in goroutine 1
+        C:/Users/Kokiri/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.23.10.windows-amd64/src/net/http/server.go:3360 +0x485

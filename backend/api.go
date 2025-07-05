@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
+	"github.com/na50r/gobank/backend/sse"
 )
 
 const JWT_SECRET = "secret"
@@ -44,6 +45,14 @@ func NewAPIServer(listenAddr string, store Storage) *APIServer {
 
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
+	router.Use(corsMiddleware)
+
+	// SSE
+	broker := sse.NewServer()
+	router.HandleFunc("/stream", broker.Stream)
+	router.HandleFunc("/messages", broker.BroadcastMessage)
+
+	// Endpoints
 	router.HandleFunc("/login", makeHTTPHandleFunc(s.handleLogin))
 	router.HandleFunc("/accounts", makeHTTPHandleFunc(s.handleAccounts))
 	router.HandleFunc("/account/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleAccount), s.store))
@@ -53,6 +62,21 @@ func (s *APIServer) Run() {
 	http.ListenAndServe(s.listenAddr, router)
 }
 
+// https://stackhawkwpc.wpcomstaging.com/golang-cors-guide-what-it-is-and-how-to-enable-it/
+// ChatGPT Aided
+func corsMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Access-Control-Allow-Origin", "*")
+        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-jwt-token")
+        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        w.Header().Set("Access-Control-Expose-Headers", "x-jwt-token")
+        if r.Method == "OPTIONS" {
+            w.WriteHeader(http.StatusOK)
+            return
+        }
+        next.ServeHTTP(w, r)
+    })
+}
 func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
 	req := new(LoginRequest)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
@@ -230,7 +254,7 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("x-jwt-token")
 		token, err := parseJWT(tokenString)
-		if err != nil && !token.Valid {
+		if err != nil && token != nil && !token.Valid {
 			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
 			return
 		}

@@ -1,4 +1,4 @@
-module github.com/na50r/gobank
+module github.com/na50r/gobank/backend
 
 go 1.23.0
 
