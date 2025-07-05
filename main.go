@@ -8,6 +8,7 @@ import (
 
 func seedAccount(store Storage, fname, lname, pw string) *Account {
 	acc, err := NewAccount(fname, lname, pw)
+	acc.Balance = float64(1000000)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -8,7 +8,7 @@ import (
 
 type Transaction struct {
 	Recipient int       `json:"recipient"`
-	Amount    int       `json:"amount"`
+	Amount    float64       `json:"amount"`
 }
 
 type Account struct {
@@ -17,7 +17,7 @@ type Account struct {
 	LastName  string    `json:"last_name"`
 	Number    int       `json:"number"`
 	EncryptedPassword string `json:"-"`
-	Balance   int       `json:"balance"`
+	Balance   float64       `json:"balance"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
