@@ -8,14 +8,13 @@ import (
 	"strconv"
 	"time"
 
+	"net/http"
+
 	jwt "github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
-	"net/http"
 	"github.com/na50r/gobank/backend/sse"
+	"golang.org/x/crypto/bcrypt"
 )
-
-const JWT_SECRET = "secret"
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Add("Content-Type", "application/json")
@@ -34,23 +33,26 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 type APIServer struct {
 	listenAddr string
 	store      Storage
+	broker     *sse.Broker
 }
 
-func NewAPIServer(listenAddr string, store Storage) *APIServer {
+func NewAPIServer(listenAddr string, store Storage, broker *sse.Broker) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
 		store:      store,
+		broker:     broker,
 	}
 }
 
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
+	// Required for this to work locally
+	// Refer to: https://stackhawkwpc.wpcomstaging.com/golang-cors-guide-what-it-is-and-how-to-enable-it/
 	router.Use(corsMiddleware)
 
 	// SSE
-	broker := sse.NewServer()
-	router.HandleFunc("/stream", broker.Stream)
-	router.HandleFunc("/messages", broker.BroadcastMessage)
+	router.HandleFunc("/stream", s.broker.Stream)
+	router.HandleFunc("/messages", s.broker.BroadcastMessage)
 
 	// Endpoints
 	router.HandleFunc("/login", makeHTTPHandleFunc(s.handleLogin))
@@ -58,25 +60,73 @@ func (s *APIServer) Run() {
 	router.HandleFunc("/account/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleAccount), s.store))
 	router.HandleFunc("/transfer/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer), s.store))
 
+	// Refresh
+	router.HandleFunc("/refresh", makeHTTPHandleFunc(s.handleRefresh))
+
 	log.Println("JSON API server running on port: ", s.listenAddr)
 	http.ListenAndServe(s.listenAddr, router)
 }
 
-// https://stackhawkwpc.wpcomstaging.com/golang-cors-guide-what-it-is-and-how-to-enable-it/
 // ChatGPT Aided
 func corsMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-jwt-token")
-        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        w.Header().Set("Access-Control-Expose-Headers", "x-jwt-token")
-        if r.Method == "OPTIONS" {
-            w.WriteHeader(http.StatusOK)
-            return
-        }
-        next.ServeHTTP(w, r)
-    })
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Expose-Headers", "Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
+
+func (s *APIServer) handleRefresh(w http.ResponseWriter, r *http.Request) error {
+	req := new(RefreshRequest)
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return err
+	}
+	resp := new(RefreshResponse)
+
+	tokenString := req.RefreshToken
+	token, err := parseJWT(tokenString)
+	if err != nil {
+		return err
+	}
+	if !token.Valid {
+		return WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
+	}
+
+	acc, err := s.store.GetAccountByRefreshToken(tokenString)
+	if err != nil {
+		return err
+	}
+
+	at, err := createJWT(acc)
+	if err != nil {
+		return err
+	}
+
+	rt, err := NewRefreshToken(acc)
+	if err != nil {
+		return err
+	}
+
+	if err := s.store.UpdateRefreshToken(rt); err != nil {
+		return err
+	}
+	resp.Token = at
+	resp.RefreshToken = rt.Token
+
+	re := sse.RefreshEvent{
+		AccountNr: acc.Number,
+	}
+	s.broker.SendMessage("refresh", re)
+
+	return WriteJSON(w, http.StatusOK, resp)
+}
+
 func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
 	req := new(LoginRequest)
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
@@ -97,16 +147,18 @@ func (s *APIServer) handleLogin(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	w.Header().Add("x-jwt-token", tokenString)
 
 	rt, err := s.store.GetRefreshToken(acc.ID)
 	if err != nil {
 		return err
 	}
-	if err := setRefreshToken(w, rt.Token); err != nil {
-		return err
+
+	resp := LoginResponse{
+		Token:        tokenString,
+		RefreshToken: rt.Token,
 	}
-	return WriteJSON(w, http.StatusOK, req)
+
+	return WriteJSON(w, http.StatusOK, resp)
 }
 
 func (s *APIServer) handleAccounts(w http.ResponseWriter, r *http.Request) error {
@@ -187,7 +239,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	if err := s.store.CreateRefreshToken(rt); err != nil {
 		return err
 	}
-	return WriteJSON(w, http.StatusOK, acc)
+	return WriteJSON(w, http.StatusCreated, acc)
 }
 
 func (s *APIServer) handleUpdateAccount(w http.ResponseWriter, r *http.Request) error {
@@ -246,13 +298,20 @@ func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 	if err := s.store.UpdateAccount(recipient); err != nil {
 		return err
 	}
+	trn := sse.Transaction{
+		Sender:    sender.Number,
+		Recipient: recipient.Number,
+		Amount:    amnt,
+	}
+	s.broker.SendMessage("transaction", trn)
+
 	defer r.Body.Close()
 	return WriteJSON(w, http.StatusOK, req)
 }
 
 func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tokenString := r.Header.Get("x-jwt-token")
+		tokenString := r.Header.Get("Authorization")
 		token, err := parseJWT(tokenString)
 		if err != nil && token != nil && !token.Valid {
 			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
@@ -268,29 +327,26 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 			WriteJSON(w, http.StatusUnauthorized, ApiError{Error: "unauthorized"})
 			return
 		}
-		printTimeLeft(token)
 		handlerFunc(w, r)
 	}
 }
 
 func createJWT(account *Account) (string, error) {
 	claims := &jwt.MapClaims{
-		"exp":            time.Now().Add(time.Hour).Unix(),
+		"exp":            time.Now().Add(1 * time.Minute).Unix(),
 		"account_number": account.Number,
 	}
-	secret := JWT_SECRET
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString([]byte(secret))
+	return token.SignedString([]byte(JWT_SECRET))
 }
 
 func parseJWT(tokenString string) (*jwt.Token, error) {
-	secret := JWT_SECRET
 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(secret), nil
+		return []byte(JWT_SECRET), nil
 	})
 }
 
@@ -313,13 +369,6 @@ func getNumber(r *http.Request) (int, error) {
 	return number, nil
 }
 
-func printTimeLeft(token *jwt.Token) {
-	claims := token.Claims.(jwt.MapClaims)
-	expirationTime := time.Unix(int64(claims["exp"].(float64)), 0)
-	timeLeft := expirationTime.Sub(time.Now())
-	fmt.Println("Time left: ", timeLeft)
-}
-
 func updateAccountWithReflect(acc *Account, req *UpdateAccountRequest) {
 	//ChatGPT Aided
 	//https://blog.devtrovert.com/p/reflection-in-go-everything-you-need
@@ -338,18 +387,3 @@ func updateAccountWithReflect(acc *Account, req *UpdateAccountRequest) {
 		}
 	}
 }
-
-func setRefreshToken(w http.ResponseWriter, tokenString string) error {
-	cookie := http.Cookie{
-		Name:  "refresh_token",
-		Value: tokenString,
-		HttpOnly: true,
-		Secure: false, // Should be changed
-		SameSite: http.SameSiteLaxMode,
-		Path: "/", // Should be changed
-		Expires: time.Now().Add(time.Hour * 24),
-	}
-	http.SetCookie(w, &cookie)
-	return nil
-}
-

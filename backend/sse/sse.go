@@ -67,8 +67,18 @@ func (broker *Broker) listen() {
 }
 
 type Message struct {
-	Name    string `json:"name"`
-	Message string `json:"msg"`
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}
+
+type Transaction struct {
+	Sender    int     `json:"sender"`
+	Recipient int     `json:"recipient"`
+	Amount    float64 `json:"amount"`
+}
+
+type RefreshEvent struct {
+	AccountNr int `json:"account_nr"`
 }
 
 func (broker *Broker) Stream(w http.ResponseWriter, r *http.Request) {
@@ -144,4 +154,13 @@ func (broker *Broker) BroadcastEvent(event string) {
 // Start listening to the stream
 //     $ curl -N http://localhost:<port>/stream
 // Send a message
-//     $ curl -X POST -H "Content-Type: application/json" -d '{"name": "Alice", "msg": "Hello"}' http://localhost:8000/messages
+//     $ curl -X POST -H "Content-Type: application/json" -d '{"type": "transaction", "data": "{"sender": 1, "recipient": 2, "amount": 100"}"}' http://localhost:8000/messages
+
+func (broker *Broker) SendMessage(eventType string, payload interface{}) {
+	msg := Message{
+		Type: eventType,
+		Data: payload,
+	}
+	j, _ := json.Marshal(msg)
+	broker.Notifier <- j
+}

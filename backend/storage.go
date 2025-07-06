@@ -17,6 +17,8 @@ type Storage interface {
 	GetAccountByNumber(number int) (*Account, error)
 	CreateRefreshToken(rt *RefreshToken) error
 	GetRefreshToken(id int) (*RefreshToken, error)
+	GetAccountByRefreshToken(token string) (*Account, error)
+	UpdateRefreshToken(rt *RefreshToken) error
 	Init() error
 }
 
@@ -196,6 +198,22 @@ func (s * SQLiteStore) GetRefreshToken(accountID int) (*RefreshToken, error) {
 	return nil, fmt.Errorf("refresh token for account %d not found", accountID)
 }
 
+func (s *SQLiteStore) GetAccountByRefreshToken(token string) (*Account, error) {
+	rows, err := s.db.Query("select * from refresh_token where token = ?", token)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		defer rows.Close()
+		rt, err := scanIntoRefreshToken(rows)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetAccountByID(rt.AccountID)
+	}
+	return nil, fmt.Errorf("refresh token %s not found", token[:10])
+}
+
 func (s *SQLiteStore) CreateAccount(acc *Account) error {
 	query := `insert into account 
 	(id, first_name, last_name, number, password, balance, created_at)
@@ -231,6 +249,18 @@ func (s *SQLiteStore) CreateRefreshToken(rt *RefreshToken) error {
 		return err
 	}
 	return nil
+}
+
+func (s * SQLiteStore) UpdateRefreshToken(rt *RefreshToken) error {
+	query := `UPDATE refresh_token SET
+        token = ?
+		WHERE account_id = ?`
+	_, err := s.db.Exec(
+		query,
+		rt.Token,
+		rt.AccountID,
+	)
+	return err
 }
 
 func (s *SQLiteStore) GetAccountByNumber(number int) (*Account, error) {
