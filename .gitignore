@@ -1,3 +1,4 @@
 backend/bin/
 backend/*.db
+backend/.env
 play/

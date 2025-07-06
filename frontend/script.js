@@ -1,8 +1,34 @@
-const app = document.getElementById('app');
+// Basic Vanilla JS
+// Everything is within one div
+const body = document.body
+const div = document.createElement('div')
+body.append(div)
+
 const API = 'http://localhost:3000';
+const evtSource = new EventSource(`${API}/stream`);
+
+evtSource.onmessage = function (event) {
+    const data = JSON.parse(event.data);
+    switch (data.type) {
+        case "transaction":
+            const number = Number(localStorage.getItem('number'));
+            console.log(`[Transaction] ${data.data.sender} -> ${data.data.amount} -> ${data.data.recipient}`);
+            sender = Number(data.data.sender);
+            recipient = Number(data.data.recipient);
+            if (sender === number || recipient === number) {
+                getAccount();
+            }
+            break;
+        case "chat":
+            console.log(`[Chat] ${data.data.name}: ${data.data.msg}`);
+            break;
+        default:
+            console.log("Unknown event type", data);
+    }
+};
 
 function renderAccount(account = {}) {
-    app.innerHTML = `
+    div.innerHTML = `
     <h1>Account Details</h1>
     <table>
         <tr>
@@ -28,7 +54,7 @@ function renderAccount(account = {}) {
 }
 
 function renderLogin() {
-    app.innerHTML = `
+    div.innerHTML = `
     <h1>Login</h1>
     <form onsubmit="login(event)">
       <input name="number" placeholder="Number" required />
@@ -40,7 +66,7 @@ function renderLogin() {
 }
 
 function renderRegister() {
-    app.innerHTML = `
+    div.innerHTML = `
     <h1>Register</h1>
     <form onsubmit="register(event)">
       <input name="first_name" placeholder="First Name" required />
@@ -52,7 +78,7 @@ function renderRegister() {
 }
 
 function renderTransfer() {
-    app.innerHTML = `
+    div.innerHTML = `
     <h1>Make Transfer</h1>
     <form onsubmit="transfer(event)">
       <input name="to" placeholder="Number" required />
@@ -62,18 +88,51 @@ function renderTransfer() {
   `;
 }
 
+async function refreshAuth() {
+
+    const refresh_token = localStorage.getItem('refresh_token');
+    data = {
+        refresh_token: refresh_token
+    };
+    const res = await fetch(`${API}/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if (res.ok) {
+        var resp = await res.json();
+        const token = resp.token;
+        const refresh_token = resp.refresh_token;
+        localStorage.setItem('token', token);
+        localStorage.setItem('refresh_token', refresh_token);
+        getAccount();
+    } else if (res.status === 401) {
+        alert('Session expired');
+        logout();
+    }
+    else {
+        alert('Refresh failed');
+        logout();
+    }
+}
+
 async function getAccount() {
     const number = Number(localStorage.getItem('number'));
     const token = localStorage.getItem('token');
-    const account = await fetch(`${API}/account/${number}`, {
-        headers: { 'x-jwt-token': `${token}` }
-    }).then(r => r.json());
-    renderAccount(account);
+    const res = await callWithRefresh(`account/${number}`, 'GET', { 'Authorization': `${token}` }, null);
+    if (res.ok) {
+        const account = await res.json();
+        renderAccount(account);
+    } else {
+        alert('Get account failed');
+        renderAccount();
+    }
 }
 
 function logout() {
     localStorage.removeItem('number');
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     renderLogin();
 }
 
@@ -101,7 +160,6 @@ async function register(e) {
     }
 }
 
-
 async function login(e) {
     e.preventDefault();
     localStorage.setItem('number', e.target.number.value);
@@ -111,7 +169,6 @@ async function login(e) {
         number: number,
         password: form.password.value
     };
-
     const res = await fetch(`${API}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,14 +176,40 @@ async function login(e) {
     });
 
     if (res.ok) {
-        renderAccount();
-        const token = res.headers.get('x-jwt-token');
+        var resp = await res.json();
+        var token = resp.token;
+        var refresh_token = resp.refresh_token;
         localStorage.setItem('token', token);
+        localStorage.setItem('refresh_token', refresh_token);
         getAccount();
     } else {
         alert('Login failed');
     }
 }
+
+async function callWithRefresh(endpoint, method, headers, body) {
+    async function call() {
+        // Update token
+        const token = localStorage.getItem('token');
+        headers['Authorization'] = token;
+        const res = await fetch(`${API}/${endpoint}`, {
+            method: method,
+            headers: headers,
+            body: body
+        });
+        return res;
+    }
+    res = await call();
+    if (res.ok) {
+        return res;
+    } else if (res.status === 401) {
+        await refreshAuth();
+        return await call();
+    } else {
+        return res;
+    }
+}
+
 
 async function transfer(e) {
     e.preventDefault();
@@ -137,15 +220,9 @@ async function transfer(e) {
         recipient: Number(form.to.value),
         amount: Number(form.amount.value)
     };
-
-    const res = await fetch(`${API}/transfer/${number}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-jwt-token': `${token}` },
-        body: JSON.stringify(data)
-    });
+    const res = await callWithRefresh(`transfer/${number}`, 'POST', { 'Content-Type': 'application/json', 'Authorization': `${token}` }, JSON.stringify(data));
     if (res.ok) {
         alert('Transfer successful');
-        getAccount();
     } else {
         alert('Transfer failed');
     }
