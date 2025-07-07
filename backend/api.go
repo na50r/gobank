@@ -46,8 +46,6 @@ func NewAPIServer(listenAddr string, store Storage, broker *sse.Broker) *APIServ
 
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
-	// Required for this to work locally
-	// Refer to: https://stackhawkwpc.wpcomstaging.com/golang-cors-guide-what-it-is-and-how-to-enable-it/
 	router.Use(corsMiddleware)
 
 	// SSE
@@ -68,17 +66,19 @@ func (s *APIServer) Run() {
 }
 
 // ChatGPT Aided
-func corsMiddleware(next http.Handler) http.Handler {
+// Reference 1: https://stackhawkwpc.wpcomstaging.com/golang-cors-guide-what-it-is-and-how-to-enable-it/ (Only sets first header)
+// Reference 2: https://stackoverflow.com/questions/61238680/access-to-fetch-at-from-origin-http-localhost3000-has-been-blocked-by-cors (Sets additional headers)
+// Reference 3: https://medium.com/@gaurang.m/allowing-cross-site-requests-in-your-gin-app-golang-1332543d91ed (Implement something similar with Gin)
+func corsMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", CLIENT)
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Expose-Headers", "Authorization")
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		next.ServeHTTP(w, r)
+		h.ServeHTTP(w, r)
 	})
 }
 
@@ -309,6 +309,7 @@ func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 	return WriteJSON(w, http.StatusOK, req)
 }
 
+// Authentication Middleware Adapted from Anthony GG's tutorial
 func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
@@ -369,11 +370,9 @@ func getNumber(r *http.Request) (int, error) {
 	return number, nil
 }
 
+// ChatGPT Aided
+// Reference: https://blog.devtrovert.com/p/reflection-in-go-everything-you-need (flexible update)
 func updateAccountWithReflect(acc *Account, req *UpdateAccountRequest) {
-	//ChatGPT Aided
-	//https://blog.devtrovert.com/p/reflection-in-go-everything-you-need
-	//Loop through all fields
-	//Update only if update request field is not nil
 	accVal := reflect.ValueOf(acc).Elem()
 	reqVal := reflect.ValueOf(req).Elem()
 	for i := 0; i < reqVal.NumField(); i++ {

@@ -10,3 +10,10 @@ run: build
 
 seed:
 	@./bin/gobank --seed
+
+docker-build:
+	@docker build -t gobank .
+
+docker-run:
+	@docker run --rm -p 3000:3000 gobank
+

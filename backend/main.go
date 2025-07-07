@@ -3,20 +3,24 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/joho/godotenv"
-	"github.com/na50r/gobank/backend/sse"
 	"log"
 	"os"
+
+	"github.com/joho/godotenv"
+	"github.com/na50r/gobank/backend/sse"
 )
 
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-}
+var JWT_SECRET string
+var CLIENT string
 
-var JWT_SECRET = os.Getenv("JWT_SECRET")
+func init() {
+    err := godotenv.Load()
+    if err != nil {
+        log.Println("No .env file found, continuing...")
+    }
+    JWT_SECRET = os.Getenv("JWT_SECRET")
+    CLIENT = os.Getenv("CLIENT")
+}
 
 func seedAccount(store Storage, fname, lname, pw string) *Account {
 	acc, err := NewAccount(fname, lname, pw)
@@ -69,6 +73,11 @@ func main() {
 		seedAccounts(store)
 	}
 
-	server := NewAPIServer(":3000", store, sse.NewServer())
+	PORT := os.Getenv("PORT")
+	if PORT == "" {
+		PORT = "3000"
+	}
+
+	server := NewAPIServer(":"+PORT, store, sse.NewServer())
 	server.Run()
 }
