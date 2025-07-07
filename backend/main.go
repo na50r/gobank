@@ -73,6 +73,7 @@ func main() {
 		seedAccounts(store)
 	}
 
+	//Accounts for ports provided by hosting services
 	PORT := os.Getenv("PORT")
 	if PORT == "" {
 		PORT = "3000"

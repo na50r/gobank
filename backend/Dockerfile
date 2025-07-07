@@ -6,12 +6,14 @@ RUN mkdir /build/sse
 COPY go.mod go.sum storage.go types.go api.go main.go /build/
 COPY sse/sse.go /build/sse/
 WORKDIR /build
+# Workaround to not having to change the imports in the monorepo
 RUN sed -i 's|github.com/na50r/gobank/backend/sse|github.com/na50r/build/sse|' api.go
 RUN sed -i 's|github.com/na50r/gobank/backend/sse|github.com/na50r/build/sse|' main.go
 RUN sed -i 's|module github.com/na50r/gobank/backend|module github.com/na50r/build|' go.mod
 RUN go mod tidy
-RUN GO111MODULE=on CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o bin/gobank
 
+# Required to get sqlite3 to work
+RUN CGO_ENABLED=1 go build -o bin/gobank
 
 FROM alpine
 # Reference1: https://dev.to/heroku/deploying-your-first-golang-webapp-11b3
