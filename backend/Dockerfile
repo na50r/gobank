@@ -21,6 +21,5 @@ COPY --from=builder /build/bin/gobank /app/
 WORKDIR /app
 RUN chown -R appuser /app && chmod 755 /app
 USER appuser
-ENV CLIENT="http://localhost:5500"
 CMD ["./gobank"]
 

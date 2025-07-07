@@ -15,5 +15,5 @@ docker-build:
 	@docker build -t gobank .
 
 docker-run:
-	@docker run --rm -p 3000:3000 gobank
+	@docker run --rm -p 3000:3000 -e CLIENT="http://localhost:5500" gobank
 
