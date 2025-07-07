@@ -14,10 +14,13 @@ RUN GO111MODULE=on CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-w -
 
 
 FROM alpine
+# Reference1: https://dev.to/heroku/deploying-your-first-golang-webapp-11b3
+# Reference2: https://stackoverflow.com/questions/45972608/how-to-give-folder-permissions-inside-a-docker-container-folder
 RUN adduser -S -D -H -h /app appuser
 COPY --from=builder /build/bin/gobank /app/
 WORKDIR /app
 RUN chown -R appuser /app && chmod 755 /app
 USER appuser
+ENV CLIENT="http://localhost:5500"
 CMD ["./gobank"]
 
