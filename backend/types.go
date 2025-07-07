@@ -79,7 +79,7 @@ func NewAccount(firstName, lastName, password string) (*Account, error) {
 		LastName:  lastName,
 		Number:    rand.Intn(1000000),
 		EncryptedPassword: string(encpw),
-		Balance:   0,
+		Balance:   5,
 		CreatedAt: time.Now().UTC(),
 	}, nil
 }
