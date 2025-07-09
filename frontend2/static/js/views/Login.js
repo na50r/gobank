@@ -1,7 +1,7 @@
 import AbstractView from "./AbstractView.js";
 import { API } from "../index.js";
 import { navigateToURL } from "../index.js";
-import { h1Comp, formComp, inputComp, btnComp } from "../components/ui.js";
+import { h1Comp, formComp, inputComp, btnComp } from "../components/UI.js";
 import { login } from "../util/calls.js";
 
 function renderLogin() {

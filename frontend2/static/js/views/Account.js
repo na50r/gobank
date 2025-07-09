@@ -1,5 +1,5 @@
 import AbstractView from "./AbstractView.js";
-import { h1Comp, colComp, rowComp, btnComp } from "../components/ui.js";
+import { h1Comp, colComp, rowComp, btnComp } from "../components/UI.js";
 import { getAccount, logout } from "../util/calls.js";
 
 

@@ -1,5 +1,5 @@
 import AbstractView from "./AbstractView.js";
-import { h1Comp, btnComp, formComp, inputComp } from "../components/ui.js";
+import { h1Comp, btnComp, formComp, inputComp } from "../components/UI.js";
 import { transfer } from "../util/calls.js";
 
 function renderTransfer() {

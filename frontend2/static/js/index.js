@@ -23,8 +23,9 @@ function accountInactive() {
 
 function accountActive() {
     const nav = document.querySelector("nav");
+    const number = localStorage.getItem("number")
     nav.innerHTML = `
-        <a href="#/" class="nav__link" data-link>Account</a>
+        <a href="#/account/${number}" class="nav__link" data-link>Account</a>
         <a href="#/transfer" class="nav__link" data-link>Transfer</a>`
 }
 
