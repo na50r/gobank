@@ -1,4 +1,5 @@
 import { API, accountActive, accountInactive } from "../index.js";
+import { deleteAccount } from "../views/Account.js";
 
 async function callWithRefresh(endpoint, method, headers, body) {
     async function call() {
@@ -61,7 +62,7 @@ async function getAccount() {
         const account = await res.json();
         return account;
     } else {
-        alert('Get account failed');
+        alert('Unable to retrieve account information');
         const account = {};
         return account;
     }
@@ -72,6 +73,7 @@ function logout() {
     localStorage.removeItem('number');
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
+    deleteAccount();
     location.hash = '#/login';
     accountInactive();
 }

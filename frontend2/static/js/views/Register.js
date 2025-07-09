@@ -20,7 +20,8 @@ async function register(e) {
 
     if (res.ok) {
         const account = await res.json();
-        alert(`Registration successful! You account number is ${account.number}`);
+        alert(`Registration successful! You account number was copied to your clipboard.`);
+        navigator.clipboard.writeText(account.number);
         location.hash = '#/login';
     } else {
         alert('Registration failed');

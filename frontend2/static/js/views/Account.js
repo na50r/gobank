@@ -2,6 +2,25 @@ import AbstractView from "./AbstractView.js";
 import { h1Comp, colComp, rowComp, btnComp } from "../components/Ui.js";
 import { getAccount, logout } from "../util/Calls.js";
 
+function cacheAccount(account) {
+    localStorage.setItem('account', JSON.stringify(account));
+}
+
+export function deleteAccount() {
+    localStorage.removeItem('account');
+}
+
+function loadAccount() {
+    const account = localStorage.getItem('account');
+    if (account) {
+        try {
+            return JSON.parse(account);
+        } catch {
+            return null;
+        }
+    }
+    return null;
+}
 
 function renderAccount(account = {}) {
     const container = document.createElement('div');
@@ -22,7 +41,7 @@ function renderAccount(account = {}) {
     });
     const btn1 = btnComp("Transfer", () => {location.hash = '#/transfer'});
     const btn2 = btnComp('Logout', logout);
-    container.append(btn1, btn2, table);
+    container.append(table, btn1, btn2);
     return container;
 }
 
@@ -34,7 +53,11 @@ export default class extends AbstractView {
     }
 
     async getHtml() {
-        const account = await getAccount();
+        if (!loadAccount()) {
+            const account = await getAccount();
+            cacheAccount(account);
+        }
+        const account = loadAccount();
         return renderAccount(account);
     }
 }

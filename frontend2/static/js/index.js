@@ -3,6 +3,7 @@ import Register from "./views/Register.js";
 import Account from "./views/Account.js";
 import Transfer from "./views/Transfer.js";
 import Game from "./views/Game.js";
+import { deleteAccount } from "./views/Account.js";
 export const API = document.body.dataset.apiUrl;
 
 const evtSource = new EventSource(`${API}/stream`);
@@ -15,6 +16,7 @@ evtSource.onmessage = function (event) {
             const sender = Number(data.data.sender);
             const recipient = Number(data.data.recipient);
             if (sender === number || recipient === number) {
+                deleteAccount();
                 console.log("Transaction detected, reloading account page");
                 location.hash = `#/account/${number}`;
                 location.reload();
