@@ -23,7 +23,7 @@ function formComp(onsubmit) {
     return form;
 }
 
-function btnComp(text, onclick = function () { }, type = 'button') {
+function btnComp(text, onclick = function () { }, type = 'button', route=undefined) {
     const btn = document.createElement('button');
     btn.innerText = text;
     btn.onclick = onclick;

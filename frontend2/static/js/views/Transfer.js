@@ -1,6 +1,6 @@
 import AbstractView from "./AbstractView.js";
-import { h1Comp, btnComp, formComp, inputComp } from "../components/UI.js";
-import { transfer } from "../util/calls.js";
+import { h1Comp, btnComp, formComp, inputComp } from "../components/Ui.js";
+import { transfer } from "../util/Calls.js";
 
 function renderTransfer() {
     const container = document.createElement('div');

@@ -58,6 +58,10 @@ p {
     cursor: pointer;
 }
 
+.btn:hover {
+    background-color: #62bbde;
+}
+
 form input {
     margin: 5px 0;
     padding: 8px;

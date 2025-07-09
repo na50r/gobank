@@ -1,7 +1,6 @@
 import AbstractView from "./AbstractView.js";
 import { API } from "../index.js";
-import { navigateToURL } from "../index.js";
-import { h1Comp, formComp, inputComp, btnComp } from "../components/UI.js";
+import { h1Comp, formComp, inputComp, btnComp } from "../components/Ui.js";
 
 
 async function register(e) {
@@ -22,7 +21,7 @@ async function register(e) {
     if (res.ok) {
         const account = await res.json();
         alert(`Registration successful! You account number is ${account.number}`);
-        navigateToURL('#/login');
+        location.hash = '#/login';
     } else {
         alert('Registration failed');
     }
@@ -37,7 +36,8 @@ function renderRegister() {
     const input2 = inputComp('last_name', 'Last Name');
     const input3 = inputComp('password', 'Password', 'password');
     const btn = btnComp('Register', () => { }, 'submit');
-    form.append(input1, input2, input3, btn);
+    const btn2 = btnComp('Login', () => { location.hash = '#/login'; });
+    form.append(input1, input2, input3, btn, btn2);
     container.append(form);
     return container;
 }

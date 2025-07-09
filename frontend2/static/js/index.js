@@ -6,6 +6,31 @@ import Transfer from "./views/Transfer.js";
 const API_URL = "http://localhost:3000";
 export const API = API_URL;
 
+const evtSource = new EventSource(`${API}/stream`);
+evtSource.onmessage = function (event) {
+    const data = JSON.parse(event.data);
+    switch (data.type) {
+        case "transaction":
+            const number = Number(localStorage.getItem('number'));
+            console.log(data)
+            console.log(`[Transaction] ${data.data.sender} -> ${data.data.amount} -> ${data.data.recipient}`);
+            const sender = Number(data.data.sender);
+            const recipient = Number(data.data.recipient);
+            if (sender === number || recipient === number) {
+                console.log("Transaction detected, reloading account page");
+                location.hash = `#/account/${number}`;
+                location.reload();
+            }
+            break;
+        case "chat":
+            console.log(`[Chat] ${data.data.name}: ${data.data.msg}`);
+            break;
+        default:
+            console.log("Unknown event type", data);
+    }
+};
+
+
 window.onload = () => {
     if (localStorage.getItem('token')) {
         accountActive();
@@ -17,7 +42,7 @@ window.onload = () => {
 function accountInactive() {
     const nav = document.querySelector("nav");
     nav.innerHTML = `
-        <a href="#/" class="nav__link" data-link>Login</a>
+        <a href="#/login" class="nav__link" data-link>Login</a>
         <a href="#/register" class="nav__link" data-link>Register</a>`
 }
 
@@ -43,14 +68,6 @@ const getParams = match => {
     }))
 }
 
-
-const navigateTo = url => {
-    history.pushState(null, null, url);
-    router();
-}
-
-export const navigateToURL = navigateTo;
-
 const router = async () => {
     const routes = [
         { path: "#/", view: Login },
@@ -66,10 +83,10 @@ const router = async () => {
         return { route: route, result: currHash.match(pathToRegex(route.path)) };
     })
 
-    let match = potentialMatches.find(potentialMatch => potentialMatch.result !== null); 
+    let match = potentialMatches.find(potentialMatch => potentialMatch.result !== null);
     if (!match) {
         match = {
-            route: routes[0], result: [location.pathname]
+            route: routes[0], result: [location.hash]
         }
     }
     const view = new match.route.view(getParams(match));
@@ -78,14 +95,19 @@ const router = async () => {
     app.replaceChildren(container);
 };
 
-window.addEventListener("popstate", router);
+window.addEventListener("hashchange", router);
 
 document.addEventListener("DOMContentLoaded", () => {
+    if (location.pathname.endsWith("index.html")) {
+        location.pathname = location.pathname.replace("index.html", "");
+        location.hash = "#/";
+    }
+
     document.body.addEventListener("click", e => {
         if (e.target.matches("[data-link]")) {
             e.preventDefault();
-            navigateTo(e.target.href);
+            location.hash = e.target.getAttribute("href");
         }
-    })
+    });
     router();
 });
