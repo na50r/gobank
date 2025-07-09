@@ -8,9 +8,6 @@ rebuild:
 run: build
 	@./bin/gobank
 
-seed:
-	@./bin/gobank --seed
-
 docker-build:
 	@docker build -t gobank .
 

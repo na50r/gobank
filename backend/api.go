@@ -55,8 +55,8 @@ func (s *APIServer) Run() {
 	// Endpoints
 	router.HandleFunc("/login", makeHTTPHandleFunc(s.handleLogin))
 	router.HandleFunc("/accounts", makeHTTPHandleFunc(s.handleAccounts))
-	router.HandleFunc("/account/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleAccount), s.store))
-	router.HandleFunc("/transfer/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer), s.store))
+	router.HandleFunc("/account/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleAccount)))
+	router.HandleFunc("/transfer/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer)))
 
 	// Refresh
 	router.HandleFunc("/refresh", makeHTTPHandleFunc(s.handleRefresh))
@@ -310,7 +310,7 @@ func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 }
 
 // Authentication Middleware Adapted from Anthony GG's tutorial
-func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
+func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
 		token, err := parseJWT(tokenString)
@@ -334,7 +334,7 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 
 func createJWT(account *Account) (string, error) {
 	claims := &jwt.MapClaims{
-		"exp":            time.Now().Add(1 * time.Minute).Unix(),
+		"exp":            time.Now().Add(45 * time.Second).Unix(),
 		"account_number": account.Number,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -351,15 +351,15 @@ func parseJWT(tokenString string) (*jwt.Token, error) {
 	})
 }
 
-func getID(r *http.Request) (int, error) {
-	idStr := mux.Vars(r)["id"]
+// func getID(r *http.Request) (int, error) {
+// 	idStr := mux.Vars(r)["id"]
 
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return id, fmt.Errorf("invalid id given %s", idStr)
-	}
-	return id, nil
-}
+// 	id, err := strconv.Atoi(idStr)
+// 	if err != nil {
+// 		return id, fmt.Errorf("invalid id given %s", idStr)
+// 	}
+// 	return id, nil
+// }
 
 func getNumber(r *http.Request) (int, error) {
 	numberStr := mux.Vars(r)["number"]

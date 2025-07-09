@@ -87,7 +87,7 @@ func NewAccount(firstName, lastName, password string) (*Account, error) {
 func NewRefreshToken(account *Account) (*RefreshToken, error) {
 	refreshToken := jwt.New(jwt.SigningMethodHS256)
 	claims := refreshToken.Claims.(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	claims["exp"] = time.Now().Add(time.Hour).Unix()
 	rt, err := refreshToken.SignedString([]byte(JWT_SECRET))
 	if err != nil {
 		return nil, err
