@@ -2,9 +2,8 @@ import Login from "./views/Login.js";
 import Register from "./views/Register.js";
 import Account from "./views/Account.js";
 import Transfer from "./views/Transfer.js";
-
-const API_URL = "http://localhost:3000";
-export const API = API_URL;
+import Game from "./views/Game.js";
+export const API = document.body.dataset.apiUrl;
 
 const evtSource = new EventSource(`${API}/stream`);
 evtSource.onmessage = function (event) {
@@ -12,7 +11,6 @@ evtSource.onmessage = function (event) {
     switch (data.type) {
         case "transaction":
             const number = Number(localStorage.getItem('number'));
-            console.log(data)
             console.log(`[Transaction] ${data.data.sender} -> ${data.data.amount} -> ${data.data.recipient}`);
             const sender = Number(data.data.sender);
             const recipient = Number(data.data.recipient);
@@ -31,14 +29,6 @@ evtSource.onmessage = function (event) {
 };
 
 
-window.onload = () => {
-    if (localStorage.getItem('token')) {
-        accountActive();
-        return;
-    }
-    accountInactive();
-};
-
 function accountInactive() {
     const nav = document.querySelector("nav");
     nav.innerHTML = `
@@ -51,16 +41,26 @@ function accountActive() {
     const number = localStorage.getItem("number")
     nav.innerHTML = `
         <a href="#/account/${number}" class="nav__link" data-link>Account</a>
-        <a href="#/transfer" class="nav__link" data-link>Transfer</a>`
+        <a href="#/transfer" class="nav__link" data-link>Transfer</a>
+        <a href="#/game" class="nav__link" data-link>Game</a>`
+}
+
+function loggedIn() {
+    if (localStorage.getItem('token')) {
+        return true;
+    }
+    return false;
 }
 
 export { accountActive, accountInactive };
 
-const pathToRegex = path =>
-    new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "([^\\/]+)") + "$");
+
+function pathToRegex(path) {
+    return new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "([^\\/]+)") + "$");
+}
 
 
-const getParams = match => {
+function getParams(match) {
     const values = match.result.slice(1);
     const keys = Array.from(match.route.path.matchAll(/:(\w+)/g)).map(result => result[1]);
     return Object.fromEntries(keys.map((key, i) => {
@@ -68,16 +68,16 @@ const getParams = match => {
     }))
 }
 
-const router = async () => {
+async function router() {
     const routes = [
-        { path: "#/", view: Login },
+        { path: "#/", view: loggedIn() ? Account : Login },
         { path: "#/login", view: Login },
         { path: "#/register", view: Register },
         { path: "#/transfer", view: Transfer },
         { path: "#/account/:id", view: Account },
+        { path: "#/game", view: Game }
     ]
 
-    // Test each route for potential match
     const potentialMatches = routes.map(route => {
         const currHash = location.hash || "#/";
         return { route: route, result: currHash.match(pathToRegex(route.path)) };
@@ -93,14 +93,17 @@ const router = async () => {
     const container = await view.getHtml();
     const app = document.querySelector("#app");
     app.replaceChildren(container);
-};
+}
 
-window.addEventListener("hashchange", router);
-
-document.addEventListener("DOMContentLoaded", () => {
+function startBehaviour() {
     if (location.pathname.endsWith("index.html")) {
         location.pathname = location.pathname.replace("index.html", "");
         location.hash = "#/";
+    }
+
+    if (loggedIn()) {
+        const number = localStorage.getItem("number");
+        location.hash = `#/account/${number}`;
     }
 
     document.body.addEventListener("click", e => {
@@ -110,4 +113,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     router();
-});
+}
+
+window.onload = () => {
+    if (loggedIn()) {
+        accountActive();
+        return;
+    }
+    accountInactive();
+};
+
+window.addEventListener("hashchange", router);
+document.addEventListener("DOMContentLoaded", startBehaviour);

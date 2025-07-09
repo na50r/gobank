@@ -20,9 +20,9 @@ function renderAccount(account = {}) {
         const row = rowComp([col1, col2]);
         table.append(row);
     });
+    const btn1 = btnComp("Transfer", () => {location.hash = '#/transfer'});
     const btn2 = btnComp('Logout', logout);
-    container.append(btn2);
-    container.append(table);
+    container.append(btn1, btn2, table);
     return container;
 }
 

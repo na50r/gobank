@@ -11,7 +11,7 @@ body {
     left: 0;
     width: var(--nav-width);
     height: 100vh;
-    background: #222222
+    background: #222222;
 }
 
 .nav__link {
@@ -30,6 +30,7 @@ body {
     margin: 2em;
     line-height: 1.5;
     font-weight: 500;
+    height: 100%;
 }
 
 a {
@@ -83,4 +84,78 @@ th {
 
 tr:nth-child(even) {
     background-color: #dddddd;
+}
+
+
+#scoped-app * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+#scoped-app html, 
+#scoped-app body {
+    height: 100%;
+}
+
+#scoped-app .container {
+    display: grid;
+    grid-template-columns: auto 300px;
+    height: 100%;
+}
+
+#scoped-app aside {
+    border-left: 1px solid lightblue;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: flex-start;
+    gap: .5em;
+    padding: 1em;
+}
+
+#scoped-app .element {
+    border: 1px solid lightblue;
+    display: block;
+    width: fit-content;
+    padding: 0.5em;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    background-color: white;
+}
+
+#scoped-app .element span:first-of-type {
+    margin-right: 5px;
+}
+
+#scoped-app .element span:first-of-type img {
+    width: 1.25em;
+    height: 1.25em;
+    margin: 0 .05em 0 .1em;
+    vertical-align: -0.1em;
+}
+
+#scoped-app .element:hover {
+    filter: brightness(0.95);
+}
+
+#scoped-app .element.movable {
+    position: absolute;
+}
+
+#scoped-app .element.dragged {
+    z-index: 10;
+    pointer-events: none;
+}
+
+#scoped-app .element.loading {
+    animation: loading 1s infinite;
+}
+
+@keyframes loading {
+    0% {filter: brightness(1);}
+    50% {filter: brightness(0.9);}
+    100% {filter: brightness(1);}
 }
