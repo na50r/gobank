@@ -4,63 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Single Page App</title>
+    <title>SPA</title>
+    <link rel="stylesheet" href="static/css/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
 </head>
 
-<body>
-    <script src="script3.js"></script>
+<body data-api-url="http://localhost:3000">
+    <nav class="nav"></nav>
+    <div id="app"></div>
+    <script type="module" src="static/js/index.js"></script>
 </body>
 
 </html>
-
-<style>
-    body {
-        font-family: sans-serif;
-        padding: 20px;
-    }
-
-    h1 {
-        font-size: 2.5rem;
-        margin-bottom: 20px;
-    }
-
-    p {
-        font-size: 1.2rem;
-    }
-
-    .title {
-        color: darkblue;
-        margin-bottom: 10px;
-    }
-
-    .btn {
-        padding: 10px;
-        margin-right: 8px;
-        background-color: #4c93af;
-        color: white;
-        cursor: pointer;
-    }
-
-    form input {
-        margin: 5px 0;
-        padding: 8px;
-        width: 200px;
-        display: block;
-    }
-
-    table {
-        font-family: arial, sans-serif;
-        margin: 20px 0;
-    }
-
-    td,
-    th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
-    }
-
-    tr:nth-child(even) {
-        background-color: #dddddd;
-    }
-</style>
