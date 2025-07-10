@@ -1,5 +1,5 @@
 import AbstractView from "./AbstractView.js";
-import { h1Comp, colComp, rowComp, btnComp } from "../components/Ui.js";
+import { h1Comp, colComp, rowComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
 import { getAccount, logout } from "../util/Calls.js";
 
 function cacheAccount(account) {
@@ -23,7 +23,7 @@ function loadAccount() {
 }
 
 function renderAccount(account = {}) {
-    const container = document.createElement('div');
+    const container = containerComp();
     const h1 = h1Comp('Account Details');
     container.append(h1);
     const table = document.createElement('table');
@@ -41,7 +41,8 @@ function renderAccount(account = {}) {
     });
     const btn1 = btnComp("Transfer", () => {location.hash = '#/transfer'});
     const btn2 = btnComp('Logout', logout);
-    container.append(table, btn1, btn2);
+    const bar = btnBar([btn1, btn2]);
+    container.append(table, bar);
     return container;
 }
 

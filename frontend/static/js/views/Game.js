@@ -88,7 +88,7 @@ function renderGame(game) {
         isHovered: null,
     };
     AddElem(state, '😊', 'Smile')
-    AddElem(state, '🏀', 'Basketball')
+    AddElem(state, '🏀', 'Basketball')  
     document.addEventListener("mouseup", async (e) => {
         console.log(state.isDragged, state.isHovered);
 

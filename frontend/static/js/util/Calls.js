@@ -23,7 +23,6 @@ async function callWithRefresh(endpoint, method, headers, body) {
     }
 }
 
-
 async function login(e) {
     e.preventDefault();
     localStorage.setItem('number', e.target.number.value);
@@ -122,9 +121,4 @@ async function transfer(e) {
     }
 }
 
-
-
 export { login, getAccount, logout, refreshAuth, transfer };
-
-
-

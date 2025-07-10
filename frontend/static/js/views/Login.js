@@ -1,10 +1,10 @@
 import AbstractView from "./AbstractView.js";
-import { h1Comp, formComp, inputComp, btnComp } from "../components/Ui.js";
+import { h1Comp, formComp, inputComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
 import { login } from "../util/Calls.js";
 
 
 function renderLogin() {
-    const container = document.createElement('div');
+    const container = containerComp();
     const h1 = h1Comp('Login');
     container.append(h1);
     const form = formComp(login);
@@ -12,7 +12,8 @@ function renderLogin() {
     const input2 = inputComp('password', 'Password', 'password');
     const btn1 = btnComp('Login', () => { }, 'submit');
     const btn2 = btnComp('Register', () => {location.hash = '#/register'});
-    form.append(input1, input2, btn1, btn2);
+    const bar = btnBar([btn1, btn2]);
+    form.append(input1, input2, bar);
     container.append(form);
     return container;
 }
