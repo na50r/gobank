@@ -58,6 +58,7 @@ func (s *APIServer) Run() {
 	router.HandleFunc("/account/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleAccount)))
 	router.HandleFunc("/transfer/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer)))
 	router.HandleFunc("/image/{number}", makeHTTPHandleFunc(s.handleImage))
+	router.HandleFunc("/element", makeHTTPHandleFunc(s.handleGetElement))
 
 	// Refresh
 	router.HandleFunc("/refresh", makeHTTPHandleFunc(s.handleRefresh))
@@ -82,6 +83,21 @@ func corsMiddleware(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
+
+func (s *APIServer) handleGetElement(w http.ResponseWriter, r *http.Request) error {
+	req := new(ElementRequest)
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return err
+	}
+	resp := new(ElementResponse)
+	result, err := s.store.GetElement(req.A, req.B)
+	if err != nil {
+		return err
+	}
+	resp.Result = *result
+	return WriteJSON(w, http.StatusOK, resp)
+}
+
 
 func (s *APIServer) handleRefresh(w http.ResponseWriter, r *http.Request) error {
 	req := new(RefreshRequest)

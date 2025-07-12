@@ -23,6 +23,8 @@ type Storage interface {
 	GetImage(accountID string) ([]byte, error)
 	GetImages() ([]*Image, error)
 	NewImageForAccount(accountNumber int) string
+	AddElement(element *Element) error
+	GetElement(a, b string) (*string, error)
 	Init() error
 
 }
@@ -60,4 +62,14 @@ func scanIntoImage(rows *sql.Rows) (*Image, error) {
 		&image.Image,
 	)
 	return image, err
+}
+
+func scanIntoElement(rows *sql.Rows) (*Element, error) {
+	element := new(Element)
+	err := rows.Scan(
+		&element.A,
+		&element.B,
+		&element.Result,
+	)
+	return element, err
 }

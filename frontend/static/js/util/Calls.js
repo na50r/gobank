@@ -138,4 +138,22 @@ async function transfer(e) {
     }
 }
 
-export { login, getAccount, logout, refreshAuth, transfer , getImage };
+async function getElement(a, b) {
+    const token = localStorage.getItem('token');
+    const data = {
+        a: a,
+        b: b
+    };
+    const body = JSON.stringify(data);
+    const res = await callWithRefresh(`element`, 'POST', { 'Authorization': `${token}` }, body);
+    if (res.ok) {
+        const resp = await res.json();
+        console.log(resp);
+        return resp.result;
+    } else {
+        return "Star";
+    }
+}
+
+
+export { login, getAccount, logout, refreshAuth, transfer , getImage, getElement };

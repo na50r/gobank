@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"strings"
 )
 
 type SQLiteStore struct {
@@ -26,6 +27,17 @@ func NewSQLiteStore() (*SQLiteStore, error) {
 
 	fmt.Println("Connected to the SQLite database successfully.")
 	return &SQLiteStore{db: db}, nil
+}
+
+func (s *SQLiteStore) createElementTable() error {
+	query := `create table if not exists element (
+		a text,
+		b text,
+		result text,
+		unique(a, b)
+		)`
+	_, err := s.db.Exec(query)
+	return err
 }
 
 func (s *SQLiteStore) createAccountTable() error {
@@ -70,6 +82,9 @@ func (s *SQLiteStore) Init() error {
 		return err
 	}
 	if err := s.createImageTable(); err != nil {
+		return err
+	}
+	if err := s.createElementTable(); err != nil {
 		return err
 	}
 	return nil
@@ -226,6 +241,39 @@ func (s *SQLiteStore) AddImage(image []byte, name string) error {
 		image,
 	)
 	return err
+}
+
+func (s *SQLiteStore) AddElement(element *Element) error {
+	a := element.A
+	b := element.B
+	sorted := a < b
+	if !sorted {
+		a, b = b, a
+	}
+	_, err := s.db.Exec(
+		"insert or ignore into element (a, b, result) values (?, ?, ?)",
+		a,
+		b,
+		element.Result,
+	)
+	return err
+}
+
+func (s *SQLiteStore) GetElement(a, b string) (*string, error) {
+	a = strings.ToLower(a)
+	b = strings.ToLower(b)
+	sorted := a < b
+	if !sorted {
+		a, b = b, a   
+	}
+	var result string
+	err := s.db.QueryRow("SELECT result FROM element WHERE a = ? AND b = ?", a, b).Scan(&result)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("element for %s and %s not found", a, b)
+	} else if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func (s *SQLiteStore) GetImage(name string) ([]byte, error) {

@@ -1,4 +1,5 @@
 import AbstractView from "./AbstractView.js";
+import { getElement } from "../util/Calls.js";
 //Based on: https://www.youtube.com/watch?v=Ot5FQobG33A&lc=UgyRK4esogM-Vqi3Ofp4AaABAg
 // Prepare Game HTML
 function createGame() {
@@ -27,11 +28,12 @@ function CreateElem(emoji, name) {
     return elem;
 }
 
-// TODO: No logic yet
-function Merge(elemA, elemB) {
+async function Merge(elemA, elemB) {
     console.log(elemA.getAttribute("data-elem"), elemB.getAttribute("data-elem"));
+    const res = await getElement(elemA.getAttribute("data-elem"), elemB.getAttribute("data-elem"));
+    const capitalized = res.charAt(0).toUpperCase() + res.slice(1);
     console.log(elemA.getAttribute("data-emoji"), elemB.getAttribute("data-emoji"));
-    return { emoji: '⭐', name: 'Star' };
+    return { emoji: '⚫', name: capitalized };
 }
 
 // Creates bar, must be rendered constantly
@@ -65,7 +67,7 @@ function renderElems(state, elems) {
 }
 
 // Renders Game
-function renderGame(game) {
+async function renderGame(game) {
     const section = game.querySelector('section');
     const aside = game.querySelector('aside');
     const startList = [
@@ -90,7 +92,7 @@ function renderGame(game) {
             state.selected.push(copy.cloneNode(true));
         }
         if (state.selected.length === 2) {
-            const out = Merge(state.selected[0], state.selected[1]);
+            const out = await Merge(state.selected[0], state.selected[1]);
             const merged = CreateElem(out.emoji, out.name);
             if (!state.elems.find(elem => elem.name === out.name)) {
                 state.elems.push(out);

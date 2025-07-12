@@ -83,6 +83,21 @@ type ImageResponse struct {
 	Image []byte `json:"image"`
 }
 
+type Element struct {
+	A string `json:"a"`
+	B string `json:"b"`
+	Result string `json:"result"`
+}
+
+type ElementRequest struct {
+	A string `json:"a"`
+	B string `json:"b"`
+}
+
+type ElementResponse struct {
+	Result string `json:"result"`
+}
+
 func NewAccount(firstName, lastName, password string) (*Account, error) {
 	encpw, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
