@@ -1,5 +1,7 @@
-backend/bin/
-backend/*.db
-backend/.env
-play/
 .vscode/
+*.db
+*.py
+*.csv
+backend/bin/
+backend/.env
+backend/icons

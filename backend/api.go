@@ -55,8 +55,10 @@ func (s *APIServer) Run() {
 	// Endpoints
 	router.HandleFunc("/login", makeHTTPHandleFunc(s.handleLogin))
 	router.HandleFunc("/accounts", makeHTTPHandleFunc(s.handleAccounts))
-	router.HandleFunc("/account/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleAccount), s.store))
-	router.HandleFunc("/transfer/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer), s.store))
+	router.HandleFunc("/account/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleAccount)))
+	router.HandleFunc("/transfer/{number}", withJWTAuth(makeHTTPHandleFunc(s.handleTransfer)))
+	router.HandleFunc("/image/{number}", makeHTTPHandleFunc(s.handleImage))
+	router.HandleFunc("/element", makeHTTPHandleFunc(s.handleGetElement))
 
 	// Refresh
 	router.HandleFunc("/refresh", makeHTTPHandleFunc(s.handleRefresh))
@@ -81,6 +83,21 @@ func corsMiddleware(h http.Handler) http.Handler {
 		h.ServeHTTP(w, r)
 	})
 }
+
+func (s *APIServer) handleGetElement(w http.ResponseWriter, r *http.Request) error {
+	req := new(ElementRequest)
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return err
+	}
+	resp := new(ElementResponse)
+	result, err := s.store.GetElement(req.A, req.B)
+	if err != nil {
+		return err
+	}
+	resp.Result = *result
+	return WriteJSON(w, http.StatusOK, resp)
+}
+
 
 func (s *APIServer) handleRefresh(w http.ResponseWriter, r *http.Request) error {
 	req := new(RefreshRequest)
@@ -192,6 +209,56 @@ func (s *APIServer) handleAccount(w http.ResponseWriter, r *http.Request) error 
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
+func (s *APIServer) handleImage(w http.ResponseWriter, r *http.Request) error {
+	if r.Method == "POST" {
+		return s.handlePostImage(w, r)
+	}
+	if r.Method == "GET" {
+		return s.handleGetImage(w, r)
+	}
+	return fmt.Errorf("method not allowed %s", r.Method)
+}
+
+func (s *APIServer) handlePostImage(w http.ResponseWriter, r *http.Request) error {
+	num, err := getNumber(r)
+	if err != nil {
+		return err
+	}
+	req := new(ImageRequest)
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return err
+	}
+	acc, err := s.store.GetAccountByNumber(num)
+	if err != nil {
+		return err
+	}
+	if err := s.store.AddImage(req.Image, acc.ImageName); err != nil {
+		return err
+	}
+	fmt.Println(req.Image)
+	return WriteJSON(w, http.StatusOK, acc)
+}
+
+func (s *APIServer) handleGetImage(w http.ResponseWriter, r *http.Request) error {
+	num, err := getNumber(r)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Getting account")
+	acc, err := s.store.GetAccountByNumber(num)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Getting image")
+	image, err := s.store.GetImage(acc.ImageName)
+	if err != nil {
+		return err
+	}
+	resp := new(ImageResponse)
+	resp.Image = image
+	return WriteJSON(w, http.StatusOK, resp)
+}
+
 func (s *APIServer) handleGetAccount(w http.ResponseWriter, r *http.Request) error {
 	num, err := getNumber(r)
 	if err != nil {
@@ -227,6 +294,8 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return err
 	}
+	imageName := s.store.NewImageForAccount(acc.Number)
+	acc.ImageName = imageName
 
 	rt, err := NewRefreshToken(acc)
 	if err != nil {
@@ -310,7 +379,7 @@ func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 }
 
 // Authentication Middleware Adapted from Anthony GG's tutorial
-func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
+func withJWTAuth(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
 		token, err := parseJWT(tokenString)
@@ -334,7 +403,7 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 
 func createJWT(account *Account) (string, error) {
 	claims := &jwt.MapClaims{
-		"exp":            time.Now().Add(1 * time.Minute).Unix(),
+		"exp":            time.Now().Add(45 * time.Second).Unix(),
 		"account_number": account.Number,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -351,15 +420,15 @@ func parseJWT(tokenString string) (*jwt.Token, error) {
 	})
 }
 
-func getID(r *http.Request) (int, error) {
-	idStr := mux.Vars(r)["id"]
+// func getID(r *http.Request) (int, error) {
+// 	idStr := mux.Vars(r)["id"]
 
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return id, fmt.Errorf("invalid id given %s", idStr)
-	}
-	return id, nil
-}
+// 	id, err := strconv.Atoi(idStr)
+// 	if err != nil {
+// 		return id, fmt.Errorf("invalid id given %s", idStr)
+// 	}
+// 	return id, nil
+// }
 
 func getNumber(r *http.Request) (int, error) {
 	numberStr := mux.Vars(r)["number"]
