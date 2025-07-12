@@ -135,6 +135,7 @@ img {
     grid-template-rows: auto auto;
     gap: 1em;
     padding: 1em;
+    min-width: min-content
 }
 
 #gamebox section {
@@ -159,9 +160,24 @@ img {
     padding: 1em;
 }
 
+#gamebox #bar {
+    display: flex;
+    align-items: flex-start;
+    gap: .5em;
+    padding: 1em;
+}
+
+#gamebox #bar .symbol {
+    font-weight: bold;
+    font-size: 2em;
+    margin: 0 0.5em;
+}
+
 #gamebox .element {
     border: 1px solid rgb(0, 0, 0);
-    display: block;
+    display: flex;
+    flex-direction: row;
+    flex-wrap : nowrap;
     width: fit-content;
     padding: 0.5em;
     border-radius: 6px;
@@ -172,6 +188,10 @@ img {
 
 #gamebox .element span:first-of-type {
     margin-right: 5px;
+}
+
+#gamebox .element span:last-of-type {
+    white-space: nowrap;
 }
 
 #gamebox .element span:first-of-type img {
@@ -196,20 +216,6 @@ img {
 
 #gamebox .element.loading {
     animation: loading 1s infinite;
-}
-
-
-#gamebox #bar {
-    display: flex;
-    align-items: flex-start;
-    gap: .5em;
-    padding: 1em;
-}
-
-#gamebox #bar .symbol {
-    font-weight: bold;
-    font-size: 2em;
-    margin: 0 0.5em;
 }
 
 @keyframes loading {
