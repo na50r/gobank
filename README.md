@@ -36,6 +36,11 @@ cd backend
 make run
 ```
 
+* If you have the required filed ready, you can seed the database with:
+```sh
+make seed
+```
+
 ### Docker
 ```sh
 cd backend
