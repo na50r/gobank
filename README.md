@@ -3,6 +3,8 @@ A simple bank API built with Go. Based on Anthony GG's [Building A JSON API In G
 * A game where you combine elements to create new ones (InfiniteCraft)
 * Real-time updates of transactions; so each time money is transferred, the account page of the recipient is updated automatically (uses Server-Sent Events)
 
+https://github.com/user-attachments/assets/c955ee04-d720-4267-8fc9-f2f2dec1f279
+
 Uses:
 * Gorilla Mux for routing
 * JWT for authentication
