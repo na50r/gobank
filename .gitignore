@@ -3,3 +3,4 @@ backend/*.db
 backend/.env
 play/
 .vscode/
+backend/icons

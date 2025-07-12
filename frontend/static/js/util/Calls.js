@@ -67,6 +67,23 @@ async function getAccount() {
     }
 }
 
+async function getImage() {
+    const number = Number(localStorage.getItem('number'));
+    const token = localStorage.getItem('token');
+    const res = await callWithRefresh(`image/${number}`, 'GET', { 'Authorization': `${token}` }, null);
+    var image = new Image();
+    image.alt = 'Profile Picture';
+    image.id = 'profile-pic';
+    if (res.ok) {
+        const resp = await res.json();
+        const imageEnc = resp.image;
+        image.src = 'data:image/png;base64,' + imageEnc;
+        return image;
+    } else {
+        alert('Unable to retrieve image');
+        return image;
+    }
+}
 
 function logout() {
     localStorage.removeItem('number');
@@ -121,4 +138,4 @@ async function transfer(e) {
     }
 }
 
-export { login, getAccount, logout, refreshAuth, transfer };
+export { login, getAccount, logout, refreshAuth, transfer , getImage };

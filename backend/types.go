@@ -1,13 +1,12 @@
 package main
 
 import (
-	"math/rand"
-	"time"
-	"golang.org/x/crypto/bcrypt"
 	jwt "github.com/golang-jwt/jwt"
+	"golang.org/x/crypto/bcrypt"
+	"math/rand"
 	"net/http"
+	"time"
 )
-
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
 
@@ -16,24 +15,25 @@ type ApiError struct {
 }
 
 type Transaction struct {
-	Recipient int       `json:"recipient"`
-	Amount    float64       `json:"amount"`
+	Recipient int     `json:"recipient"`
+	Amount    float64 `json:"amount"`
 }
 
 type Account struct {
-	ID        int       `json:"id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Number    int       `json:"number"`
-	EncryptedPassword string `json:"-"`
-	Balance   float64       `json:"balance"`
-	CreatedAt time.Time `json:"created_at"`
+	ID                int       `json:"id"`
+	FirstName         string    `json:"first_name"`
+	LastName          string    `json:"last_name"`
+	ImageName         string    `json:"image_name"`
+	Number            int       `json:"number"`
+	EncryptedPassword string    `json:"-"`
+	Balance           float64   `json:"balance"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 type RefreshToken struct {
-	ID int `json:"id"`
-	AccountID int `json:"account_id"`
-	Token string `json:"token"`
+	ID        int    `json:"id"`
+	AccountID int    `json:"account_id"`
+	Token     string `json:"token"`
 }
 
 type CreateAccountRequest struct {
@@ -50,12 +50,12 @@ type UpdateAccountRequest struct {
 }
 
 type LoginRequest struct {
-	Number int `json:"number"`
+	Number   int    `json:"number"`
 	Password string `json:"password"`
 }
 
 type LoginResponse struct {
-	Token string `json:"token"`
+	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
 }
 
@@ -64,8 +64,23 @@ type RefreshRequest struct {
 }
 
 type RefreshResponse struct {
-	Token string `json:"token"`
+	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
+}
+
+type Image struct {
+	Name  string `json:"name"`
+	Image []byte `json:"image"`
+}
+
+type ImageRequest struct {
+	Name  string `json:"name"`
+	Image []byte `json:"image"`
+}
+
+type ImageResponse struct {
+	Name  string `json:"name"`
+	Image []byte `json:"image"`
 }
 
 func NewAccount(firstName, lastName, password string) (*Account, error) {
@@ -73,14 +88,16 @@ func NewAccount(firstName, lastName, password string) (*Account, error) {
 	if err != nil {
 		return nil, err
 	}
+	imageName := "default.png"
 	return &Account{
-		ID:        rand.Intn(10000),
-		FirstName: firstName,
-		LastName:  lastName,
-		Number:    rand.Intn(1000000),
+		ID:                rand.Intn(10000),
+		FirstName:         firstName,
+		LastName:          lastName,
+		ImageName:         imageName,
+		Number:            rand.Intn(1000000),
 		EncryptedPassword: string(encpw),
-		Balance:   5,
-		CreatedAt: time.Now().UTC(),
+		Balance:           5,
+		CreatedAt:         time.Now().UTC(),
 	}, nil
 }
 
@@ -94,10 +111,8 @@ func NewRefreshToken(account *Account) (*RefreshToken, error) {
 	}
 
 	return &RefreshToken{
-		ID: rand.Intn(10000),
+		ID:        rand.Intn(10000),
 		AccountID: account.ID,
-		Token: rt,
+		Token:     rt,
 	}, nil
 }
-
-

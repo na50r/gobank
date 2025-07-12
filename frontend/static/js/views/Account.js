@@ -1,6 +1,6 @@
 import AbstractView from "./AbstractView.js";
 import { h1Comp, colComp, rowComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
-import { getAccount, logout } from "../util/Calls.js";
+import { getAccount, logout , getImage } from "../util/Calls.js";
 
 function cacheAccount(account) {
     localStorage.setItem('account', JSON.stringify(account));
@@ -22,10 +22,11 @@ function loadAccount() {
     return null;
 }
 
-function renderAccount(account = {}) {
+function renderAccount(account = {}, img = new Image()) {
     const container = containerComp();
     const h1 = h1Comp('Account Details');
     container.append(h1);
+    container.append(img);
     const table = document.createElement('table');
     const info = [
         { name: 'Number', value: account.number },
@@ -59,6 +60,7 @@ export default class extends AbstractView {
             cacheAccount(account);
         }
         const account = loadAccount();
-        return renderAccount(account);
+        const img = await getImage();
+        return renderAccount(account, img);
     }
 }

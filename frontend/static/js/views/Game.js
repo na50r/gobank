@@ -1,68 +1,21 @@
 import AbstractView from "./AbstractView.js";
 //Based on: https://www.youtube.com/watch?v=Ot5FQobG33A&lc=UgyRK4esogM-Vqi3Ofp4AaABAg
-
+// Prepare Game HTML
 function createGame() {
-    const game = document.createElement('div');
-    game.id = 'scoped-app';
     const container = document.createElement('div');
-    container.classList.add('container');
-    game.appendChild(container);
+    container.id = 'gamebox';
+    container.classList.add('gamebox');
     const section = document.createElement('section');
     container.appendChild(section);
     const aside = document.createElement('aside');
     container.appendChild(aside);
-    return game;
+    return container;
 }
 
-function AddElem(state, emoji, name) {
-    let elem = CreateElem(emoji, name);
-    elem.addEventListener("mousedown", (e) => {
-        AddDraggable(state, emoji, name);
-
-    });
-    state.aside.appendChild(elem);
-}
-
-function AddDraggable(state, emoji, name) {
-    let newElem = CreateElem(emoji, name);
-    state.section.appendChild(newElem);
-    newElem.classList.add("movable");
-    state.isDragged = newElem;
-    newElem.classList.add("dragged");
-
-    newElem.addEventListener("mousedown", (e) => {
-        if (newElem.classList.contains("loading")) {
-            return;
-        }
-
-        state.isDragged = newElem;
-        newElem.classList.add("dragged");
-    });
-
-    newElem.addEventListener("contextmenu", (e) => {
-        if (e.ctrlKey) return;
-        e.preventDefault();
-        newElem.remove();
-    });
-
-    newElem.addEventListener("mouseenter", (e) => {
-        if (newElem.classList.contains("loading")) {
-            return;
-        }
-        state.isHovered = newElem;
-    });
-
-    newElem.addEventListener("mouseleave", (e) => {
-        if (newElem.classList.contains("loading")) {
-            return;
-        }
-        state.isHovered = null;
-    });
-    return newElem;
-}
-
+// Creates an Element in HTML
 function CreateElem(emoji, name) {
     const elem = document.createElement("div");
+    elem.setAttribute("data-emoji", emoji);
     elem.setAttribute("data-elem", name);
     elem.classList.add("element");
     const span1 = document.createElement("span");
@@ -74,61 +27,84 @@ function CreateElem(emoji, name) {
     return elem;
 }
 
+// TODO: No logic yet
 function Merge(elemA, elemB) {
+    console.log(elemA.getAttribute("data-elem"), elemB.getAttribute("data-elem"));
+    console.log(elemA.getAttribute("data-emoji"), elemB.getAttribute("data-emoji"));
     return { emoji: '⭐', name: 'Star' };
 }
 
+// Creates bar, must be rendered constantly
+function renderBar(elem1, elem2, out) {
+    const plus = document.createElement("span");
+    plus.textContent = "+";
+    plus.className = "symbol";
+
+    const equals = document.createElement("span");
+    equals.textContent = "=";
+    equals.className = "symbol";
+
+    const bar = document.createElement("div");
+    bar.id = "bar";
+    const div = document.createElement("div");
+    bar.appendChild(elem1 ? elem1 : div);
+    bar.appendChild(plus);
+    bar.appendChild(elem2 ? elem2 : div);
+    bar.appendChild(equals);
+    bar.appendChild(out ? out : div);
+    return bar;
+}
+
+// Renders Element list
+function renderElems(state, elems) {
+    state.aside.innerHTML = "";
+    elems.forEach(element => {
+        element = CreateElem(element.emoji, element.name);
+        state.aside.appendChild(element);
+    });
+}
+
+// Renders Game
 function renderGame(game) {
     const section = game.querySelector('section');
     const aside = game.querySelector('aside');
+    const startList = [
+        { emoji: '🔥', name: 'Fire' },
+        { emoji: '💧', name: 'Water' },
+        { emoji: '🌪️', name: 'Wind' },
+        { emoji: '🌎', name: 'Earth' },
+    ]
     const state = {
         section: section,
         aside: aside,
-        isDragged: null,
-        isHovered: null,
+        selected: [],
+        elems: startList,
+
     };
-    AddElem(state, '😊', 'Smile')
-    AddElem(state, '🏀', 'Basketball')  
-    document.addEventListener("mouseup", async (e) => {
-        console.log(state.isDragged, state.isHovered);
-
-        if (state.isDragged && state.isHovered) {
-            let elemA = state.isDragged.getAttribute("data-elem");
-            let elemB = state.isHovered.getAttribute("data-elem");
-
-            state.isDragged.classList.add("loading")
-            state.isHovered.classList.add("loading")
-            let copyA = state.isDragged
-            let copyB = state.isHovered
-            const res = Merge(elemA, elemB);
-            if (res) {
-                const newElem = AddDraggable(state, res.emoji, res.name);
-                section.appendChild(newElem);
-                newElem.style.top = copyA.style.top;
-                newElem.style.left = copyA.style.left;
-                copyA.remove();
-                copyB.remove();
-            } else {
-                state.isDragged.classList.remove("loading")
-                state.isHovered.classList.remove("loading")
-            }
-
-            if (state.isDragged) {
-                state.isDragged.classList.remove("dragged");
-            }
-            state.isDragged = null;
-            state.isHovered = null;
+    renderElems(state, startList);
+    const bar = renderBar(...state.selected);
+    state.section.append(bar);
+    document.addEventListener("click", async (e) => {
+        const copy = e.target.closest('.element');
+        if (copy) {
+            state.selected.push(copy.cloneNode(true));
         }
-        if (state.isDragged) {
-            state.isDragged.classList.remove("dragged");
-        }
-        state.isDragged = null;
-    });
+        if (state.selected.length === 2) {
+            const out = Merge(state.selected[0], state.selected[1]);
+            const merged = CreateElem(out.emoji, out.name);
+            if (!state.elems.find(elem => elem.name === out.name)) {
+                state.elems.push(out);
+                renderElems(state, state.elems);
+            }
+            state.selected.push(merged);
 
-    document.addEventListener("mousemove", (e) => {
-        if (!state.isDragged) return;
-        state.isDragged.style.top = e.clientY - state.isDragged.clientHeight / 2 + "px";
-        state.isDragged.style.left = e.clientX - state.isDragged.clientWidth / 2 + "px";
+        }
+        console.log(state.selected);
+        if (state.selected.length > 3) {
+            state.selected = [];
+            state.selected.push(copy.cloneNode(true));
+        }
+        state.section.replaceChild(renderBar(...state.selected), state.section.querySelector('#bar'));
     });
     return game;
 }
