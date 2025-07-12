@@ -57,3 +57,9 @@ It is possible to host the server on Render, make sure to set a `CLIENT` and `JW
 
 ### Hosting
 It is possible to host the frontend using Netlify, you can uploud the folder and it does the rest. 
+
+# References
+* Backend was implemented mainly using Anthony GG's [Building A JSON API In Golang](https://www.youtube.com/watch?v=pwZuNmAzaH8&list=PL0xRBLFXXsP6nudFDqMXzrvQCZrxSOm-2) series
+* Frontend was implemented using dcode's [Build a Single Page Application with JavaScript (No Frameworks)](https://www.youtube.com/watch?v=6BozpmSjk-Y) tutorial
+    * The Infinite Craft clone was implemented using [I tried to create an Infinite Craft clone](https://www.youtube.com/watch?v=Ot5FQobG33A&lc=) video
+* Use of LLMs was kept to a minimum, StackOverflow and general googling was preferred, as this repository was meant for learning purposes.
