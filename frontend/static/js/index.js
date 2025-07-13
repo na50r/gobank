@@ -34,17 +34,17 @@ evtSource.onmessage = function (event) {
 function accountInactive() {
     const nav = document.querySelector("nav");
     nav.innerHTML = `
-        <a href="#/login" class="nav__link" data-link>Login</a>
-        <a href="#/register" class="nav__link" data-link>Register</a>`
+        <a href="#/login" class="nav__link">Login</a>
+        <a href="#/register" class="nav__link">Register</a>`
 }
 
 function accountActive() {
     const nav = document.querySelector("nav");
     const number = localStorage.getItem("number")
     nav.innerHTML = `
-        <a href="#/account/${number}" class="nav__link" data-link>Account</a>
-        <a href="#/transfer" class="nav__link" data-link>Transfer</a>
-        <a href="#/game" class="nav__link" data-link>Game</a>`
+        <a href="#/account/${number}" class="nav__link">Account</a>
+        <a href="#/transfer" class="nav__link">Transfer</a>
+        <a href="#/game" class="nav__link">Game</a>`
 }
 
 function loggedIn() {
@@ -107,13 +107,6 @@ function startBehaviour() {
         const number = localStorage.getItem("number");
         location.hash = `#/account/${number}`;
     }
-
-    document.body.addEventListener("click", e => {
-        if (e.target.matches("[data-link]")) {
-            e.preventDefault();
-            location.hash = e.target.getAttribute("href");
-        }
-    });
     router();
 }
 
