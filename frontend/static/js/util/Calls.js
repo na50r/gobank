@@ -1,7 +1,7 @@
-import { API, accountActive, accountInactive } from "../index.js";
-import { deleteAccount } from "../views/Account.js";
+import { API, navigateTo, } from "../index.js";
+import { accountActive, accountInactive, deleteAccount } from "./Helpers.js";
 
-async function callWithRefresh(endpoint, method, headers, body) {
+export async function callWithRefresh(endpoint, method, headers, body) {
     async function call() {
         const token = localStorage.getItem('token');
         headers['Authorization'] = token;
@@ -23,7 +23,7 @@ async function callWithRefresh(endpoint, method, headers, body) {
     }
 }
 
-async function login(e) {
+export async function login(e) {
     e.preventDefault();
     localStorage.setItem('number', e.target.number.value);
     const number = Number(e.target.number.value);
@@ -45,7 +45,7 @@ async function login(e) {
         localStorage.setItem('token', token);
         localStorage.setItem('refresh_token', refresh_token);
         alert('Login successful');
-        location.hash = `#/account/${number}`;
+        navigateTo(`#/account/${number}`);
         accountActive();
     } else {
         alert('Login failed');
@@ -53,7 +53,7 @@ async function login(e) {
 }
 
 
-async function getAccount() {
+export async function getAccount() {
     const number = Number(localStorage.getItem('number'));
     const token = localStorage.getItem('token');
     const res = await callWithRefresh(`account/${number}`, 'GET', { 'Authorization': `${token}` }, null);
@@ -67,7 +67,7 @@ async function getAccount() {
     }
 }
 
-async function getImage() {
+export async function getImage() {
     const number = Number(localStorage.getItem('number'));
     const token = localStorage.getItem('token');
     const res = await callWithRefresh(`image/${number}`, 'GET', { 'Authorization': `${token}` }, null);
@@ -85,16 +85,16 @@ async function getImage() {
     }
 }
 
-function logout() {
+export function logout() {
     localStorage.removeItem('number');
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     deleteAccount();
-    location.hash = '#/login';
+    navigateTo('#/login');
     accountInactive();
 }
 
-async function refreshAuth() {
+export async function refreshAuth() {
     const refresh_token = localStorage.getItem('refresh_token');
     const data = {
         refresh_token: refresh_token
@@ -120,7 +120,7 @@ async function refreshAuth() {
     }
 }
 
-async function transfer(e) {
+export async function transfer(e) {
     e.preventDefault();
     const number = Number(localStorage.getItem('number'));
     const token = localStorage.getItem('token');
@@ -132,13 +132,13 @@ async function transfer(e) {
     const res = await callWithRefresh(`transfer/${number}`, 'POST', { 'Content-Type': 'application/json', 'Authorization': `${token}` }, JSON.stringify(data));
     if (res.ok) {
         alert('Transfer successful');
-        location.hash = `#/account/${number}`;
+        navigateTo(`#/account/${number}`);
     } else {
         alert('Transfer failed');
     }
 }
 
-async function getElement(a, b) {
+export async function getElement(a, b) {
     const token = localStorage.getItem('token');
     const data = {
         a: a,
@@ -156,4 +156,29 @@ async function getElement(a, b) {
 }
 
 
-export { login, getAccount, logout, refreshAuth, transfer , getImage, getElement };
+export async function register(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        first_name: form.first_name.value,
+        last_name: form.last_name.value,
+        password: form.password.value
+    };
+
+    const res = await fetch(`${API}/accounts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        const account = await res.json();
+        alert(`Registration successful! You account number was copied to your clipboard.`);
+        navigator.clipboard.writeText(account.number);
+        navigateTo('#/login');
+    } else {
+        alert('Registration failed');
+    }
+}
+
+
