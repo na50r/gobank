@@ -1,5 +1,7 @@
 import AbstractView from "./AbstractView.js";
 import { getElement } from "../util/Calls.js";
+import { accountAccess } from "../util/Helpers.js";
+
 //Based on: https://www.youtube.com/watch?v=Ot5FQobG33A&lc=UgyRK4esogM-Vqi3Ofp4AaABAg
 // Prepare Game HTML
 function createGame() {
@@ -118,6 +120,9 @@ export default class extends AbstractView {
     }
 
     async getHtml() {
+        if (!accountAccess(this.params.id)) {
+            return;
+        }
         const game = createGame();
         return renderGame(game);
     }

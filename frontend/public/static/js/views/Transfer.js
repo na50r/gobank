@@ -2,6 +2,7 @@ import AbstractView from "./AbstractView.js";
 import { h1Comp, btnComp, formComp, inputComp, containerComp, btnBar } from "../components/Ui.js";
 import { transfer } from "../util/Calls.js";
 import { navigateTo } from "../index.js";
+import { accountAccess } from "../util/Helpers.js";
 
 function renderTransfer() {
     const number = localStorage.getItem('number');
@@ -26,6 +27,9 @@ export default class extends AbstractView {
     }
 
     async getHtml() {
+        if (!accountAccess(this.params.id)) {
+            return;
+        }
         return renderTransfer();
     }
 }

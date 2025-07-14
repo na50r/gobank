@@ -1,8 +1,8 @@
-import { API, accountActive, accountInactive } from "../index.js";
-import { deleteAccount } from "../views/Account.js";
+import { API } from "../index.js";
+import { accountActive, accountInactive, deleteAccount } from "./Helpers.js";
 import { navigateTo } from "../index.js";
 
-async function callWithRefresh(endpoint, method, headers, body) {
+export async function callWithRefresh(endpoint, method, headers, body) {
     async function call() {
         const token = localStorage.getItem('token');
         headers['Authorization'] = token;
@@ -24,7 +24,7 @@ async function callWithRefresh(endpoint, method, headers, body) {
     }
 }
 
-async function login(e) {
+export async function login(e) {
     e.preventDefault();
     localStorage.setItem('number', e.target.number.value);
     const number = Number(e.target.number.value);
@@ -54,8 +54,7 @@ async function login(e) {
 }
 
 
-async function getAccount() {
-    const number = Number(localStorage.getItem('number'));
+export async function getAccount(number) {
     const token = localStorage.getItem('token');
     const res = await callWithRefresh(`account/${number}`, 'GET', { 'Authorization': `${token}` }, null);
     if (res.ok) {
@@ -68,8 +67,7 @@ async function getAccount() {
     }
 }
 
-async function getImage() {
-    const number = Number(localStorage.getItem('number'));
+export async function getImage(number) {
     const token = localStorage.getItem('token');
     const res = await callWithRefresh(`image/${number}`, 'GET', { 'Authorization': `${token}` }, null);
     var image = new Image();
@@ -86,7 +84,9 @@ async function getImage() {
     }
 }
 
-function logout() {
+//In this version, logout does not make a call
+//But usually, logout should be noticed by the server too somehow, so a call is required!
+export function logout() {
     localStorage.removeItem('number');
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
@@ -95,7 +95,7 @@ function logout() {
     accountInactive();
 }
 
-async function refreshAuth() {
+export async function refreshAuth() {
     const refresh_token = localStorage.getItem('refresh_token');
     const data = {
         refresh_token: refresh_token
@@ -121,7 +121,7 @@ async function refreshAuth() {
     }
 }
 
-async function transfer(e) {
+export async function transfer(e) {
     e.preventDefault();
     const number = Number(localStorage.getItem('number'));
     const token = localStorage.getItem('token');
@@ -139,7 +139,7 @@ async function transfer(e) {
     }
 }
 
-async function getElement(a, b) {
+export async function getElement(a, b) {
     const token = localStorage.getItem('token');
     const data = {
         a: a,
@@ -155,6 +155,3 @@ async function getElement(a, b) {
         return "Star";
     }
 }
-
-
-export { login, getAccount, logout, refreshAuth, transfer , getImage, getElement };
