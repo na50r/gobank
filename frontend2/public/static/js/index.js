@@ -18,7 +18,7 @@ evtSource.onmessage = function (event) {
             if (sender === number || recipient === number) {
                 deleteAccount();
                 console.log("Transaction detected, reloading account page");
-                location.hash = `#/account/${number}`;
+                navigateTo(`/account/${number}`);
                 location.reload();
             }
             break;
@@ -34,17 +34,17 @@ evtSource.onmessage = function (event) {
 function accountInactive() {
     const nav = document.querySelector("nav");
     nav.innerHTML = `
-        <a href="#/login" class="nav__link">Login</a>
-        <a href="#/register" class="nav__link">Register</a>`
+        <a href="/login" class="nav__link" data-link>Login</a>
+        <a href="/register" class="nav__link" data-link>Register</a>`
 }
 
 function accountActive() {
     const nav = document.querySelector("nav");
     const number = localStorage.getItem("number")
     nav.innerHTML = `
-        <a href="#/account/${number}" class="nav__link">Account</a>
-        <a href="#/transfer" class="nav__link">Transfer</a>
-        <a href="#/game" class="nav__link">Game</a>`
+        <a href="/account/${number}" class="nav__link" data-link>Account</a>
+        <a href="/transfer" class="nav__link" data-link>Transfer</a>
+        <a href="/game" class="nav__link" data-link>Game</a>`
 }
 
 function loggedIn() {
@@ -70,25 +70,25 @@ function getParams(match) {
     }))
 }
 
+const routes = [
+    { path: "/", view: loggedIn() ? Account : Login },
+    { path: "/login", view: Login },
+    { path: "/register", view: Register },
+    { path: "/transfer", view: Transfer },
+    { path: "/account/:id", view: Account },
+    { path: "/game", view: Game }
+]
+
 async function router() {
-    const routes = [
-        { path: "#/", view: loggedIn() ? Account : Login },
-        { path: "#/login", view: Login },
-        { path: "#/register", view: Register },
-        { path: "#/transfer", view: Transfer },
-        { path: "#/account/:id", view: Account },
-        { path: "#/game", view: Game }
-    ]
-
     const potentialMatches = routes.map(route => {
-        const currHash = location.hash || "#/";
-        return { route: route, result: currHash.match(pathToRegex(route.path)) };
-    })
-
+        const path = location.pathname
+        return { route: route, result: path.match(pathToRegex(route.path)) }
+    });
     let match = potentialMatches.find(potentialMatch => potentialMatch.result !== null);
     if (!match) {
         match = {
-            route: routes[0], result: [location.hash]
+            route: routes[0],
+            result: [location.pathname]
         }
     }
     const view = new match.route.view(getParams(match));
@@ -97,15 +97,26 @@ async function router() {
     app.replaceChildren(container);
 }
 
-function startBehaviour() {
-    if (location.pathname.endsWith("index.html")) {
-        location.pathname = location.pathname.replace("index.html", "");
-        location.hash = "#/";
-    }
+export function navigateTo(url) {
+    history.pushState(null, null, url);
+    router();
+}
 
+function navBehaviour() {
+    document.body.addEventListener("click", e => {
+        if (e.target.matches("[data-link]")) {
+            e.preventDefault();
+            navigateTo(e.target.href);
+        }
+    })
+}
+
+
+function startBehaviour() {
+    navBehaviour();
     if (loggedIn()) {
         const number = localStorage.getItem("number");
-        location.hash = `#/account/${number}`;
+        navigateTo(`/account/${number}`);
     }
     router();
 }
@@ -118,5 +129,6 @@ window.onload = () => {
     accountInactive();
 };
 
-window.addEventListener("hashchange", router);
-document.addEventListener("DOMContentLoaded", startBehaviour);
+window.addEventListener("popstate", router);
+window.addEventListener("DOMContentLoaded", startBehaviour);
+window.addEventListener("load", router);

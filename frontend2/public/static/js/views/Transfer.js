@@ -1,6 +1,7 @@
 import AbstractView from "./AbstractView.js";
 import { h1Comp, btnComp, formComp, inputComp, containerComp, btnBar } from "../components/Ui.js";
 import { transfer } from "../util/Calls.js";
+import { navigateTo } from "../index.js";
 
 function renderTransfer() {
     const number = localStorage.getItem('number');
@@ -11,7 +12,7 @@ function renderTransfer() {
     const input1 = inputComp('to', 'Number');
     const input2 = inputComp('amount', 'Amount', 'number');
     const btn = btnComp('Transfer', () => { }, 'submit');
-    const btn2 = btnComp('Account', () => {location.hash = `#/account/${number}`;});
+    const btn2 = btnComp('Account', () => {navigateTo(`/account/${number}`)});
     const bar = btnBar([btn, btn2]);
     form.append(input1, input2, bar);
     container.append(form);

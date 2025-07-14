@@ -1,5 +1,6 @@
 import { API, accountActive, accountInactive } from "../index.js";
 import { deleteAccount } from "../views/Account.js";
+import { navigateTo } from "../index.js";
 
 async function callWithRefresh(endpoint, method, headers, body) {
     async function call() {
@@ -45,7 +46,7 @@ async function login(e) {
         localStorage.setItem('token', token);
         localStorage.setItem('refresh_token', refresh_token);
         alert('Login successful');
-        location.hash = `#/account/${number}`;
+        navigateTo(`/account/${number}`);
         accountActive();
     } else {
         alert('Login failed');
@@ -90,7 +91,7 @@ function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     deleteAccount();
-    location.hash = '#/login';
+    navigateTo('/login');
     accountInactive();
 }
 
@@ -132,7 +133,7 @@ async function transfer(e) {
     const res = await callWithRefresh(`transfer/${number}`, 'POST', { 'Content-Type': 'application/json', 'Authorization': `${token}` }, JSON.stringify(data));
     if (res.ok) {
         alert('Transfer successful');
-        location.hash = `#/account/${number}`;
+        navigateTo(`/account/${number}`);
     } else {
         alert('Transfer failed');
     }

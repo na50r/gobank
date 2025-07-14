@@ -1,6 +1,7 @@
 import AbstractView from "./AbstractView.js";
 import { h1Comp, colComp, rowComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
 import { getAccount, logout , getImage } from "../util/Calls.js";
+import { navigateTo } from "../index.js";
 
 function cacheAccount(account) {
     localStorage.setItem('account', JSON.stringify(account));
@@ -40,7 +41,7 @@ function renderAccount(account = {}, img = new Image()) {
         const row = rowComp([col1, col2]);
         table.append(row);
     });
-    const btn1 = btnComp("Transfer", () => {location.hash = '#/transfer'});
+    const btn1 = btnComp("Transfer", () => {navigateTo('/transfer')});
     const btn2 = btnComp('Logout', logout);
     const bar = btnBar([btn1, btn2]);
     container.append(table, bar);

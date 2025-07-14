@@ -1,6 +1,7 @@
 import AbstractView from "./AbstractView.js";
 import { API } from "../index.js";
 import { h1Comp, formComp, inputComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
+import { navigateTo } from "../index.js";
 
 
 async function register(e) {
@@ -22,7 +23,7 @@ async function register(e) {
         const account = await res.json();
         alert(`Registration successful! You account number was copied to your clipboard.`);
         navigator.clipboard.writeText(account.number);
-        location.hash = '#/login';
+        navigateTo('/login');
     } else {
         alert('Registration failed');
     }
