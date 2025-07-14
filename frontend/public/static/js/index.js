@@ -5,7 +5,7 @@ import Transfer from "./views/Transfer.js";
 import Game from "./views/Game.js";
 import { API } from "./util/Calls.js";
 import { loggedIn, notFound, eventHandler, accountInactive, accountActive } from "./util/Helpers.js";
-
+ 
 const evtSource = new EventSource(`${API}/stream`);
 evtSource.onmessage = eventHandler;
 

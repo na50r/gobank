@@ -1,7 +1,7 @@
 import { accountActive, accountInactive, deleteAccount } from "./Helpers.js";
 import { navigateTo } from "../index.js";
-export const API = document.body.dataset.apiUrl;
-
+import { config } from "../config.js";
+export const API = config.apiUrl;
 export async function callWithRefresh(endpoint, method, headers, body) {
     async function call() {
         const token = localStorage.getItem('token');
