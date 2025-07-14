@@ -1,6 +1,6 @@
-import { API } from "../index.js";
 import { accountActive, accountInactive, deleteAccount } from "./Helpers.js";
 import { navigateTo } from "../index.js";
+export const API = document.body.dataset.apiUrl;
 
 export async function callWithRefresh(endpoint, method, headers, body) {
     async function call() {
@@ -153,5 +153,30 @@ export async function getElement(a, b) {
         return resp.result;
     } else {
         return "Star";
+    }
+}
+
+export async function register(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        first_name: form.first_name.value,
+        last_name: form.last_name.value,
+        password: form.password.value
+    };
+
+    const res = await fetch(`${API}/accounts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        const account = await res.json();
+        alert(`Registration successful! You account number was copied to your clipboard.`);
+        navigator.clipboard.writeText(account.number);
+        navigateTo('/login');
+    } else {
+        alert('Registration failed');
     }
 }

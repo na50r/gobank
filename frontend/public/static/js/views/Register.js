@@ -1,33 +1,6 @@
 import AbstractView from "./AbstractView.js";
-import { API } from "../index.js";
+import {register} from "../util/Calls.js";
 import { h1Comp, formComp, inputComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
-import { navigateTo } from "../index.js";
-
-
-async function register(e) {
-    e.preventDefault();
-    const form = e.target;
-    const data = {
-        first_name: form.first_name.value,
-        last_name: form.last_name.value,
-        password: form.password.value
-    };
-
-    const res = await fetch(`${API}/accounts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-
-    if (res.ok) {
-        const account = await res.json();
-        alert(`Registration successful! You account number was copied to your clipboard.`);
-        navigator.clipboard.writeText(account.number);
-        navigateTo('/login');
-    } else {
-        alert('Registration failed');
-    }
-}
 
 function renderRegister() {
     const container = containerComp();

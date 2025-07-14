@@ -3,8 +3,8 @@ import Register from "./views/Register.js";
 import Account from "./views/Account.js";
 import Transfer from "./views/Transfer.js";
 import Game from "./views/Game.js";
+import { API } from "./util/Calls.js";
 import { loggedIn, notFound, eventHandler, accountInactive, accountActive } from "./util/Helpers.js";
-export const API = document.body.dataset.apiUrl;
 
 const evtSource = new EventSource(`${API}/stream`);
 evtSource.onmessage = eventHandler;
