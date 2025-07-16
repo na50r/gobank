@@ -84,18 +84,4 @@ export function eventHandler(event) {
             navigateTo(`#/account/${number}`);
         }
     }
-    // switch (data.type) {
-    //     case "transaction":
-    //         const number = Number(localStorage.getItem('number'));
-    //         const sender = Number(data.sender);
-    //         const recipient = Number(data.recipient);
-    //         if (sender === number || recipient === number) {
-    //             deleteAccount();
-    //             console.log("Transaction detected, reloading account page");
-    //             navigateTo(`#/account/${number}`);
-    //         }
-    //         break;
-    //     default:
-    //         console.log("Unknown event type", data);
-    // }
 }
