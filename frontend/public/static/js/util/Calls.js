@@ -1,6 +1,7 @@
-import { API, navigateTo, } from "../index.js";
 import { accountActive, accountInactive, deleteAccount } from "./Helpers.js";
-
+import { navigateTo } from "../index.js";
+import { config } from "../config.js";
+export const API = config.apiUrl;
 export async function callWithRefresh(endpoint, method, headers, body) {
     async function call() {
         const token = localStorage.getItem('token');
@@ -45,7 +46,7 @@ export async function login(e) {
         localStorage.setItem('token', token);
         localStorage.setItem('refresh_token', refresh_token);
         alert('Login successful');
-        navigateTo(`#/account/${number}`);
+        navigateTo(`/account/${number}`);
         accountActive();
     } else {
         alert('Login failed');
@@ -53,8 +54,7 @@ export async function login(e) {
 }
 
 
-export async function getAccount() {
-    const number = Number(localStorage.getItem('number'));
+export async function getAccount(number) {
     const token = localStorage.getItem('token');
     const res = await callWithRefresh(`account/${number}`, 'GET', { 'Authorization': `${token}` }, null);
     if (res.ok) {
@@ -67,8 +67,7 @@ export async function getAccount() {
     }
 }
 
-export async function getImage() {
-    const number = Number(localStorage.getItem('number'));
+export async function getImage(number) {
     const token = localStorage.getItem('token');
     const res = await callWithRefresh(`image/${number}`, 'GET', { 'Authorization': `${token}` }, null);
     var image = new Image();
@@ -85,12 +84,14 @@ export async function getImage() {
     }
 }
 
+//In this version, logout does not make a call
+//But usually, logout should be noticed by the server too somehow, so a call is required!
 export function logout() {
     localStorage.removeItem('number');
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     deleteAccount();
-    navigateTo('#/login');
+    navigateTo('/login');
     accountInactive();
 }
 
@@ -132,7 +133,7 @@ export async function transfer(e) {
     const res = await callWithRefresh(`transfer/${number}`, 'POST', { 'Content-Type': 'application/json', 'Authorization': `${token}` }, JSON.stringify(data));
     if (res.ok) {
         alert('Transfer successful');
-        navigateTo(`#/account/${number}`);
+        navigateTo(`/account/${number}`);
     } else {
         alert('Transfer failed');
     }
@@ -155,7 +156,6 @@ export async function getElement(a, b) {
     }
 }
 
-
 export async function register(e) {
     e.preventDefault();
     const form = e.target;
@@ -175,10 +175,8 @@ export async function register(e) {
         const account = await res.json();
         alert(`Registration successful! You account number was copied to your clipboard.`);
         navigator.clipboard.writeText(account.number);
-        navigateTo('#/login');
+        navigateTo('/login');
     } else {
         alert('Registration failed');
     }
 }
-
-

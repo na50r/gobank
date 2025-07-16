@@ -13,7 +13,7 @@ function renderTransfer() {
     const input1 = inputComp('to', 'Number');
     const input2 = inputComp('amount', 'Amount', 'number');
     const btn = btnComp('Transfer', () => { }, 'submit');
-    const btn2 = btnComp('Account', () => {navigateTo(`#/account/${number}`)});
+    const btn2 = btnComp('Account', () => {navigateTo(`/account/${number}`)});
     const bar = btnBar([btn, btn2]);
     form.append(input1, input2, bar);
     container.append(form);
