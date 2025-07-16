@@ -37,6 +37,7 @@ func NewBroker() (broker *Broker) {
 	return
 }
 
+// Goroutine manages multiple channels in the background
 func (b *Broker) listen() {
 	for {
 		select {
@@ -50,10 +51,12 @@ func (b *Broker) listen() {
 	}
 }
 
-func (b *Broker) createChannel() ClientChannel {
-	b.cnt++
+func (b *Broker) createChannel(id int) ClientChannel {
+	if id == 0 {
+		id = b.cnt
+	}
 	ch := make(chan []byte)
-	cc := ClientChannel{ID: b.cnt, Channel: ch}
+	cc := ClientChannel{ID: id, Channel: ch}
 	return cc
 }
 
@@ -63,7 +66,7 @@ func (b *Broker) SSEHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	cc := b.createChannel()
+	cc := b.createChannel(0)
 	b.connected <- cc
 
 	defer func() {
