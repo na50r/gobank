@@ -54,6 +54,7 @@ export async function login(e) {
 
 
 export async function getAccount() {
+    console.log("Getting account");
     const number = Number(localStorage.getItem('number'));
     const token = localStorage.getItem('token');
     const res = await callWithRefresh(`account/${number}`, 'GET', { 'Authorization': `${token}` }, null);
