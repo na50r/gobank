@@ -1,8 +1,7 @@
 package sse
 
-// Example SSE server in Golang.
-//     $ go run sse.go
-// Inspired from https://gist.github.com/ismasan/3fb75381cd2deb6bfa9c
+// Original based on: https://github.com/plutov/packagemain/tree/master/30-sse
+// YouTube video: https://www.youtube.com/watch?v=nvijc5J-JAQ
 
 import (
 	"encoding/json"
@@ -12,155 +11,107 @@ import (
 )
 
 type Broker struct {
-	// Events are pushed to this channel by the main events-gathering routine
-	Notifier chan []byte
-
-	// New client connections are pushed to this channel
-	newClients chan chan []byte
-
-	// Closed client connections are pushed to this channel
-	closingClients chan chan []byte
-
-	// Client connections registry
-	clients map[chan []byte]bool
+	cnt            int
+	connected      chan ClientChannel
+	disconnected   chan int
+	clientChannels map[int]chan []byte
 }
 
-func NewServer() (broker *Broker) {
-	// Instantiate a broker
+type ClientChannel struct {
+	ID      int
+	Channel chan []byte
+}
+
+type Message struct {
+	Data interface{} `json:"data"`
+}
+
+func NewBroker() (broker *Broker) {
 	broker = &Broker{
-		Notifier:       make(chan []byte, 1),
-		newClients:     make(chan chan []byte),
-		closingClients: make(chan chan []byte),
-		clients:        make(map[chan []byte]bool),
+		connected:      make(chan ClientChannel),
+		disconnected:   make(chan int),
+		clientChannels: make(map[int]chan []byte),
+		cnt:            0,
 	}
-
-	// Set it running - listening and broadcasting events
 	go broker.listen()
-
 	return
 }
 
-func (broker *Broker) listen() {
+func (b *Broker) listen() {
 	for {
 		select {
-		case s := <-broker.newClients:
-
-			// A new client has connected.
-			// Register their message channel
-			broker.clients[s] = true
-			log.Printf("Client added. %d registered clients", len(broker.clients))
-		case s := <-broker.closingClients:
-
-			// A client has dettached and we want to
-			// stop sending them messages.
-			delete(broker.clients, s)
-			log.Printf("Removed client. %d registered clients", len(broker.clients))
-		case event := <-broker.Notifier:
-
-			// We got a new event from the outside!
-			// Send event to all connected clients
-			for clientMessageChan := range broker.clients {
-				clientMessageChan <- event
-			}
+		case cc := <-b.connected:
+			b.clientChannels[cc.ID] = cc.Channel
+			fmt.Printf("client connected (id=%d), total=%d\n", cc.ID, len(b.clientChannels))
+		case remove := <-b.disconnected:
+			delete(b.clientChannels, remove)
+			fmt.Printf("client disconnected (id=%d), total=%d\n", remove, len(b.clientChannels))
 		}
 	}
 }
 
-type Message struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
+func (b *Broker) createChannel() ClientChannel {
+	b.cnt++
+	ch := make(chan []byte)
+	cc := ClientChannel{ID: b.cnt, Channel: ch}
+	return cc
 }
 
-type Transaction struct {
-	Sender    int     `json:"sender"`
-	Recipient int     `json:"recipient"`
-	Amount    float64 `json:"amount"`
-}
-
-type RefreshEvent struct {
-	AccountNr int `json:"account_nr"`
-}
-
-func (broker *Broker) Stream(w http.ResponseWriter, r *http.Request) {
-	// Check if the ResponseWriter supports flushing.
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
-		return
-	}
-
-	// Each connection registers its own message channel with the Broker's connections registry
-	messageChan := make(chan []byte)
-
-	// Signal the broker that we have a new connection
-	broker.newClients <- messageChan
-
-	// Remove this client from the map of connected clients
-	// when this handler exits.
-	defer func() {
-		broker.closingClients <- messageChan
-	}()
-
+func (b *Broker) SSEHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+	cc := b.createChannel()
+	b.connected <- cc
+
+	defer func() {
+		b.disconnected <- cc.ID
+	}()
+
+	clientGone := r.Context().Done()
+
+	rc := http.NewResponseController(w)
+
 	for {
 		select {
-		// Listen to connection close and un-register messageChan
-		case <-r.Context().Done():
-			// remove this client from the map of connected clients
-			broker.closingClients <- messageChan
+		case <-clientGone:
 			return
-
-		// Listen for incoming messages from messageChan
-		case msg := <-messageChan:
-			// Write to the ResponseWriter
-			// Server Sent Events compatible
-			fmt.Fprintf(w, "data: %s\n\n", msg)
-			// Flush the data immediatly instead of buffering it for later.
-			flusher.Flush()
+		case data := <-cc.Channel:
+			if _, err := fmt.Fprintf(w, "event:msg\ndata:%s\n\n", data); err != nil {
+				log.Printf("unable to write: %s", err.Error())
+				return
+			}
+			rc.Flush()
 		}
 	}
 }
 
-func (broker *Broker) BroadcastMessage(w http.ResponseWriter, r *http.Request) {
-	// Parse the request body
-	var msg Message
-	err := json.NewDecoder(r.Body).Decode(&msg)
+func (b *Broker) Publish(msg Message) {
+	data, err := json.Marshal(msg.Data)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("unable to marshal: %s", err.Error())
 		return
 	}
+	// Publish to all channels
+	// NOTE: Not concurrent
+	for _, channel := range b.clientChannels {
+		channel <- data
+	}
+}
 
-	// Send the message to the broker via Notifier channel
-	j, err := json.Marshal(msg)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+func (b *Broker) PublishEndpoint(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	broker.Notifier <- []byte(j)
-
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Message sent"))
-}
-
-func (broker *Broker) BroadcastEvent(event string) {
-	broker.Notifier <- []byte(event)
-}
-
-// To test the server, run the following commands in separate terminals:
-// Start listening to the stream
-//     $ curl -N http://localhost:<port>/stream
-// Send a message
-//     $ curl -X POST -H "Content-Type: application/json" -d '{"type": "transaction", "data": "{"sender": 1, "recipient": 2, "amount": 100"}"}' http://localhost:8000/messages
-
-func (broker *Broker) SendMessage(eventType string, payload interface{}) {
-	msg := Message{
-		Type: eventType,
-		Data: payload,
+	var m Message
+	err := json.NewDecoder(r.Body).Decode(&m)
+	if err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
 	}
-	j, _ := json.Marshal(msg)
-	broker.Notifier <- j
+	b.Publish(m)
+	w.Write([]byte("Msg sent\n"))
 }

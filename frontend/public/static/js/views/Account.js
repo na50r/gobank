@@ -2,7 +2,7 @@ import AbstractView from "./AbstractView.js";
 import { h1Comp, colComp, rowComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
 import { getAccount, logout, getImage } from "../util/Calls.js";
 import { navigateTo } from "../index.js";
-import { accountAccess, cacheAccount, loadAccount } from "../util/Helpers.js";
+import { accountAccess, cacheAccount, loadAccount, deleteAccount } from "../util/Helpers.js";
 
 function renderAccount(account = {}, img = new Image()) {
     const container = containerComp();

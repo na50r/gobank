@@ -49,8 +49,8 @@ func (s *APIServer) Run() {
 	router.Use(corsMiddleware)
 
 	// SSE
-	router.HandleFunc("/stream", s.broker.Stream)
-	router.HandleFunc("/messages", s.broker.BroadcastMessage)
+	router.HandleFunc("/events", s.broker.SSEHandler)
+	router.HandleFunc("/publish", s.broker.PublishEndpoint)
 
 	// Endpoints
 	router.HandleFunc("/login", makeHTTPHandleFunc(s.handleLogin))
@@ -136,10 +136,12 @@ func (s *APIServer) handleRefresh(w http.ResponseWriter, r *http.Request) error 
 	resp.Token = at
 	resp.RefreshToken = rt.Token
 
-	re := sse.RefreshEvent{
+	re := RefreshEvent{
+		Type:      "refresh",
 		AccountNr: acc.Number,
 	}
-	s.broker.SendMessage("refresh", re)
+	msg := sse.Message{Data: re}
+	s.broker.Publish(msg)
 
 	return WriteJSON(w, http.StatusOK, resp)
 }
@@ -367,13 +369,13 @@ func (s *APIServer) handleTransfer(w http.ResponseWriter, r *http.Request) error
 	if err := s.store.UpdateAccount(recipient); err != nil {
 		return err
 	}
-	trn := sse.Transaction{
+	trn := TransactionEvent{
+		Type:      "transaction",
 		Sender:    sender.Number,
 		Recipient: recipient.Number,
 		Amount:    amnt,
 	}
-	s.broker.SendMessage("transaction", trn)
-
+	s.broker.Publish(sse.Message{Data: trn})
 	defer r.Body.Close()
 	return WriteJSON(w, http.StatusOK, req)
 }

@@ -72,26 +72,16 @@ export function notFound() {
 }
 
 export function eventHandler(event) {
-    const data = JSON.parse(event.data);
-    switch (data.type) {
-        case "transaction":
-            const number = Number(localStorage.getItem('number'));
-            console.log(`[Transaction] ${data.data.sender} -> ${data.data.amount} -> ${data.data.recipient}`);
-            const sender = Number(data.data.sender);
-            const recipient = Number(data.data.recipient);
-            if (sender === number || recipient === number) {
-                deleteAccount();
-                console.log("Transaction detected, reloading account page");
-                navigateTo(`/account/${number}`);
-                location.reload();
-            }
-            break;
-        case "chat":
-            console.log(`[Chat] ${data.data.name}: ${data.data.msg}`);
-            break;
-        default:
-            console.log("Unknown event type", data);
+    let data = JSON.parse(event.data);
+    console.log(data);
+    if (data.type === "transaction") {
+        const number = Number(localStorage.getItem('number'));
+        const sender = data.sender;
+        const recipient = data.recipient;
+        if (sender === number || recipient === number) {
+            deleteAccount();
+            console.log("Transaction detected, reloading account page");
+            navigateTo(`#/account/${number}`);
+        }
     }
 }
-
-

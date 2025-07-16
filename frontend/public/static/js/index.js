@@ -6,8 +6,8 @@ import Game from "./views/Game.js";
 import { API } from "./util/Calls.js";
 import { loggedIn, notFound, eventHandler, accountInactive, accountActive } from "./util/Helpers.js";
  
-const evtSource = new EventSource(`${API}/stream`);
-evtSource.onmessage = eventHandler;
+const evtSource = new EventSource(`${API}/events`);
+evtSource.addEventListener("msg", eventHandler);
 
 function pathToRegex(path) {
     return new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "([^\\/]+)") + "$");
