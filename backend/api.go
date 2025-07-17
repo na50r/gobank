@@ -246,12 +246,10 @@ func (s *APIServer) handleGetImage(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
-	fmt.Println("Getting account")
 	acc, err := s.store.GetAccountByNumber(num)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Getting image")
 	image, err := s.store.GetImage(acc.ImageName)
 	if err != nil {
 		return err

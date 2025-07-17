@@ -2,8 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
-
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -30,7 +28,6 @@ type Storage interface {
 }
 
 func scanIntoAccount(rows *sql.Rows) (*Account, error) {
-	fmt.Println("Fetching account")
 	acc := new(Account)
 	err := rows.Scan(
 		&acc.ID,
