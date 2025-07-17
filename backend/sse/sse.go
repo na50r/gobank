@@ -41,6 +41,10 @@ func (b *Broker) SSEHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
+    token := r.URL.Query().Get("token")
+    log.Println("Received token:", token)
+	log.Println("Headers:", r.Header)
+
 	channelID := b.createChannel()
 	channel := b.clientChannels[channelID]
 	fmt.Printf("client connected (id=%d), total clients: %d\n", channelID, len(b.clientChannels))

@@ -5,10 +5,18 @@ import Transfer from "./views/Transfer.js";
 import Game from "./views/Game.js";
 import { loggedIn, notFound, eventHandler, accountInactive, accountActive } from "./util/Helpers.js";
 export const API = "http://localhost:3000";
+import { EventSource } from 'extended-eventsource';
 
-const evtSource = new EventSource(`${API}/events`);
+const evtSource = new EventSource(`${API}/events`, {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+});
+
 evtSource.addEventListener("msg", eventHandler);
 onerror = (err) => {console.log("sse error", err);};
+
+
 
 function pathToRegex(path) {
   return new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "([^\\/]+)") + "$");
