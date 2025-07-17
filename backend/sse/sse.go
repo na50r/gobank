@@ -10,67 +10,43 @@ import (
 	"net/http"
 )
 
-type Broker struct {
-	cnt            int
-	connected      chan ClientChannel
-	disconnected   chan int
-	clientChannels map[int]chan []byte
-}
-
-type ClientChannel struct {
-	ID      int
-	Channel chan []byte
-}
 
 type Message struct {
 	Data interface{} `json:"data"`
 }
 
-func NewBroker() (broker *Broker) {
-	broker = &Broker{
-		connected:      make(chan ClientChannel),
-		disconnected:   make(chan int),
+type Broker struct {
+	cnt            int
+	clientChannels map[int]chan []byte
+}
+
+func NewBroker() *Broker {
+	return &Broker{
 		clientChannels: make(map[int]chan []byte),
 		cnt:            0,
 	}
-	go broker.listen()
-	return
 }
 
-// Goroutine manages multiple channels in the background
-func (b *Broker) listen() {
-	for {
-		select {
-		case cc := <-b.connected:
-			b.clientChannels[cc.ID] = cc.Channel
-			fmt.Printf("client connected (id=%d), total=%d\n", cc.ID, len(b.clientChannels))
-		case remove := <-b.disconnected:
-			delete(b.clientChannels, remove)
-			fmt.Printf("client disconnected (id=%d), total=%d\n", remove, len(b.clientChannels))
-		}
-	}
+
+func (b *Broker) createChannel() int {
+	b.cnt++
+	b.clientChannels[b.cnt] = make(chan []byte)
+	return b.cnt
 }
 
-func (b *Broker) createChannel(id int) ClientChannel {
-	if id == 0 {
-		id = b.cnt
-	}
-	ch := make(chan []byte)
-	cc := ClientChannel{ID: id, Channel: ch}
-	return cc
-}
 
-func (b *Broker) SSEHandler(w http.ResponseWriter, r *http.Request) {
+func (b *Broker) sseHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	cc := b.createChannel(0)
-	b.connected <- cc
+	channelID := b.createChannel()
+	channel := b.clientChannels[channelID]
+	fmt.Printf("client connected (id=%d), total clients: %d\n", channelID, len(b.clientChannels))
 
 	defer func() {
-		b.disconnected <- cc.ID
+		delete(b.clientChannels, channelID)
 	}()
 
 	clientGone := r.Context().Done()
@@ -80,8 +56,9 @@ func (b *Broker) SSEHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-clientGone:
+			fmt.Printf("client has disconnected (id=%d), total clients: %d\n", channelID, len(b.clientChannels))
 			return
-		case data := <-cc.Channel:
+		case data := <-channel:
 			if _, err := fmt.Fprintf(w, "event:msg\ndata:%s\n\n", data); err != nil {
 				log.Printf("unable to write: %s", err.Error())
 				return
