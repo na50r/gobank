@@ -164,6 +164,6 @@ func main() {
 		PORT = "3000"
 	}
 
-	server := NewAPIServer(":"+PORT, store, sse.NewServer())
+	server := NewAPIServer(":"+PORT, store, sse.NewBroker())
 	server.Run()
 }

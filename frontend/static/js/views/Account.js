@@ -1,7 +1,8 @@
 import AbstractView from "./AbstractView.js";
 import { h1Comp, colComp, rowComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
 import { getAccount, logout , getImage } from "../util/Calls.js";
-import {accountAccess} from "../util/Helpers.js";
+import {accountAccess } from "../util/Helpers.js";
+import { navigateTo } from "../index.js";
 
 function cacheAccount(account) {
     localStorage.setItem('account', JSON.stringify(account));
@@ -15,6 +16,8 @@ function loadAccount() {
     const account = localStorage.getItem('account');
     if (account) {
         try {
+            console.log("Loading account from cache");
+            console.log(account);
             return JSON.parse(account);
         } catch {
             return null;
@@ -59,7 +62,8 @@ export default class extends AbstractView {
         if (!accountAccess(this.params.id)) {
             return;
         }
-        if (!loadAccount()) {
+        if (loadAccount() === null) {
+            console.log("Loading account from server");
             const account = await getAccount();
             cacheAccount(account);
         }

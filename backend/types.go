@@ -10,6 +10,18 @@ import (
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
 
+type RefreshEvent struct {
+	Type      string `json:"type"`
+	AccountNr int `json:"account_nr"`
+}
+
+type TransactionEvent struct {
+	Type      string  `json:"type"`
+	Sender    int     `json:"sender"`
+	Recipient int     `json:"recipient"`
+	Amount    float64 `json:"amount"`
+}
+
 type ApiError struct {
 	Error string `json:"error"`
 }

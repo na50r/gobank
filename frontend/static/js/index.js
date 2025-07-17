@@ -7,8 +7,9 @@ import { accountActive, accountInactive, loggedIn, eventHandler, deleteAccount, 
 import { config } from "./config.js";
 export const API = config.apiUrl;
 
-const evtSource = new EventSource(`${API}/stream`);
-evtSource.onmessage = eventHandler;
+const evtSource = new EventSource(`${API}/events`);
+evtSource.addEventListener("msg", eventHandler);
+evtSource.onerror = (err) => {console.log("sse error", err);};
 
 function pathToRegex(path) {
     return new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "([^\\/]+)") + "$");
