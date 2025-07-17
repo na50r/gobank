@@ -4,7 +4,6 @@ import { navigateTo } from "../main.js";
 import { h1Comp, formComp, inputComp, btnComp, containerComp, btnBar } from "../components/Ui.js";
 
 function renderRegister() {
-    console.log(import.meta.env.VITE_API_URL);
     const container = containerComp();
     const h1 = h1Comp('Register');
     container.append(h1);

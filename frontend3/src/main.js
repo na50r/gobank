@@ -7,8 +7,9 @@ import { loggedIn, accountActive, accountInactive, notFound, eventHandler } from
 export const API = "http://localhost:3000";
 
 const evtSource = new EventSource(`${API}/events`);
-evtSource.onmessage = eventHandler;
- 
+evtSource.addEventListener("msg", eventHandler);
+evtSource.onerror = (err) => {console.log("sse error", err);};
+
 function pathToRegex(path) {
   return new RegExp("^" + path.replace(/\//g, "\\/").replace(/:\w+/g, "([^\\/]+)") + "$");
 }

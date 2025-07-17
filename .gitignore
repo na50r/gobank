@@ -7,3 +7,4 @@ backend/.env
 backend/icons
 frontend*/node_modules
 frontend*/package-lock.json
+frontend*/dist/

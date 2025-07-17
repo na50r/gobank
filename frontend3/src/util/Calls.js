@@ -1,5 +1,5 @@
 import { API, navigateTo, } from "../main.js";
-import { accountActive, accountInactive, deleteAccount } from "./Helpers.js"
+import { accountActive, accountInactive, deleteAccount } from "./Helpers.js";
 
 export async function callWithRefresh(endpoint, method, headers, body) {
     async function call() {
@@ -54,6 +54,7 @@ export async function login(e) {
 
 
 export async function getAccount() {
+    console.log("Getting account");
     const number = Number(localStorage.getItem('number'));
     const token = localStorage.getItem('token');
     const res = await callWithRefresh(`account/${number}`, 'GET', { 'Authorization': `${token}` }, null);

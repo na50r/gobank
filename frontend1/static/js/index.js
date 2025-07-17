@@ -3,7 +3,7 @@ import Register from "./views/Register.js";
 import Account from "./views/Account.js";
 import Transfer from "./views/Transfer.js";
 import Game from "./views/Game.js";
-import { accountActive, accountInactive, loggedIn, eventHandler, deleteAccount, notFound } from "./util/Helpers.js";
+import { accountActive, accountInactive, loggedIn, eventHandler, notFound } from "./util/Helpers.js";
 import { config } from "./config.js";
 export const API = config.apiUrl;
 
