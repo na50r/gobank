@@ -33,8 +33,7 @@ export function accountActive() {
     const number = localStorage.getItem("number")
     nav.innerHTML = `
         <a href="/account/${number}" class="nav__link" data-link>Account</a>
-        <a href="/account/${number}/transfer" class="nav__link" data-link>Transfer</a>
-        <a href="/account/${number}/game" class="nav__link" data-link>Game</a>`
+        <a href="/account/${number}/transfer" class="nav__link" data-link>Transfer</a>`
 }
 
 export function loggedIn() {
