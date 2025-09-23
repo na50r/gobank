@@ -2,7 +2,6 @@ import Login from "./views/Login.js";
 import Register from "./views/Register.js";
 import Account from "./views/Account.js";
 import Transfer from "./views/Transfer.js";
-import Game from "./views/Game.js";
 import { loggedIn, notFound, eventHandler, accountInactive, accountActive } from "./util/Helpers.js";
 export const API = "http://localhost:3000";
 import { EventSource } from 'extended-eventsource';
@@ -36,7 +35,6 @@ const routes = [
   { path: "/register", view: Register },
   { path: "/account/:id/transfer", view: Transfer },
   { path: "/account/:id", view: Account },
-  { path: "/account/:id/game", view: Game }
 ]
 
 async function router() {

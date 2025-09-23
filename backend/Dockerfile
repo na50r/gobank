@@ -3,7 +3,7 @@ FROM golang:1.23.10-alpine AS builder
 RUN apk add --no-cache gcc g++ git openssh-client
 RUN mkdir /build
 RUN mkdir /build/sse
-COPY go.mod go.sum storage.go types.go api.go main.go /build/
+COPY go.mod go.sum storage.go storage_sqlite.go types.go api.go main.go /build/
 COPY sse/sse.go /build/sse/
 WORKDIR /build
 # Workaround to not having to change the imports in the monorepo
